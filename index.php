@@ -359,6 +359,148 @@ $leaderboard = fetchLeaderboard($db);
 
         .overlay.hidden { display: none; }
 
+        .reload-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 24;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 108px 20px 92px;
+            pointer-events: none;
+        }
+
+        .reload-overlay.hidden {
+            display: none;
+        }
+
+        .reload-card {
+            width: min(460px, 100%);
+            padding: 18px 20px;
+            border-radius: 22px;
+            background: rgba(7, 18, 35, 0.92);
+            border: 1px solid rgba(163, 203, 255, 0.18);
+            box-shadow: 0 20px 42px rgba(4, 10, 24, 0.42);
+            pointer-events: auto;
+        }
+
+        .reload-card.shake {
+            animation: reload-shake 0.28s ease;
+        }
+
+        .reload-title {
+            margin: 0 0 6px;
+            font-size: 1.1rem;
+        }
+
+        .reload-copy {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 0.94rem;
+            line-height: 1.45;
+        }
+
+        .reload-weapon {
+            margin-bottom: 14px;
+            padding: 12px 10px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .reload-weapon svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .reload-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .reload-step {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f0f6ff;
+        }
+
+        .reload-step.active {
+            border-color: rgba(255, 203, 69, 0.8);
+            box-shadow: 0 0 0 2px rgba(255, 203, 69, 0.22);
+            background: rgba(255, 203, 69, 0.12);
+        }
+
+        .reload-step.done {
+            color: #16250f;
+            background: #9fe07b;
+            border-color: rgba(159, 224, 123, 0.9);
+        }
+
+        .reload-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .reload-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 56px);
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .reload-arrow {
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.08);
+            color: #f3f8ff;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .reload-arrow:hover {
+            transform: translateY(-1px);
+        }
+
+        .reload-arrow[data-reload-key="ArrowUp"] {
+            grid-column: 2;
+        }
+
+        .reload-arrow[data-reload-key="ArrowLeft"] {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .reload-arrow[data-reload-key="ArrowDown"] {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .reload-arrow[data-reload-key="ArrowRight"] {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
         .overlay-card {
             width: min(1040px, 100%);
             max-height: min(88vh, 920px);
@@ -449,13 +591,13 @@ $leaderboard = fetchLeaderboard($db);
             pointer-events: auto;
         }
         .menu-button {
-            color: rgba(5, 16, 44, 0.34) !important;
+            color: #eef6ff !important;
             background: linear-gradient(180deg, rgba(21, 45, 80, 0.96) 0%, rgba(8, 19, 39, 0.98) 100%);
             border: 1px solid rgba(180, 214, 255, 0.18);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 10px 22px rgba(5, 16, 44, 0.34);
         }
         .menu-button:hover {
-            color: #1c1a10;
+            color: #fffdf6;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 28px rgba(5, 16, 44, 0.42);
         }
         .restart-button {
@@ -610,6 +752,12 @@ $leaderboard = fetchLeaderboard($db);
         @keyframes pop { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.35) rotate(26deg); } }
         @keyframes fade-shot { from { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.4); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(2); } }
         @keyframes float-score { from { opacity: 1; transform: translate3d(-50%, -50%, 0) translateY(0); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) translateY(-42px); } }
+        @keyframes reload-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            60% { transform: translateX(8px); }
+            100% { transform: translateX(0); }
+        }
         @media (max-width: 900px) {
             .hud {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -669,6 +817,35 @@ $leaderboard = fetchLeaderboard($db);
             .overlay {
                 align-items: flex-start;
                 padding: 10px;
+            }
+            .reload-overlay {
+                align-items: center;
+                padding: 92px 10px 78px;
+            }
+            .reload-card {
+                width: min(360px, 100%);
+                padding: 14px;
+                border-radius: 18px;
+            }
+            .reload-copy {
+                font-size: 0.82rem;
+                margin-bottom: 12px;
+            }
+            .reload-step {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                font-size: 1rem;
+            }
+            .reload-pad {
+                grid-template-columns: repeat(3, 50px);
+                gap: 7px;
+            }
+            .reload-arrow {
+                width: 50px;
+                height: 50px;
+                border-radius: 14px;
+                font-size: 1.1rem;
             }
             .overlay-card {
                 width: 100%;
@@ -760,7 +937,8 @@ $leaderboard = fetchLeaderboard($db);
         <div class="cloud three"></div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
-        <div class="instructions" id="statusText">Click chickens before the timer ends. Use Menu or Esc for the game menu, R to restart instantly, and log in to save your scores on the leaderboard.</div>
+        <div class="instructions" id="statusText">Click chickens before the timer ends. Use Menu or Esc for the game menu, R to restart instantly, and when ammo hits 0 use the arrow reload prompt to chamber the shotgun.</div>
+        <div class="reload-overlay hidden" id="reloadOverlay" aria-live="polite"></div>
         <div class="overlay" id="overlay"></div>
         <div class="crosshair" id="crosshair"></div>
         <?php if ($dbError): ?>
@@ -782,6 +960,7 @@ $leaderboard = fetchLeaderboard($db);
         const ammoEl = document.getElementById("ammo");
         const bestEl = document.getElementById("best");
         const overlay = document.getElementById("overlay");
+        const reloadOverlay = document.getElementById("reloadOverlay");
         const statusText = document.getElementById("statusText");
         const crosshair = document.getElementById("crosshair");
         const menuControl = document.getElementById("menuControl");
@@ -792,6 +971,14 @@ $leaderboard = fetchLeaderboard($db);
         const magSize = 6;
         const spawnLimit = 8;
         const spawnEveryMs = 900;
+        const reloadSequenceLength = 4;
+        const reloadDirections = ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"];
+        const reloadSymbols = {
+            ArrowUp: "↑",
+            ArrowRight: "→",
+            ArrowDown: "↓",
+            ArrowLeft: "←"
+        };
         const chickens = new Map();
         const chickenTypes = [
             { label: "Cream Chicken", colors: ["#fff7e8", "#f4e0bb", "#ef9b29"], speedMin: 140, speedMax: 190, pointsMin: 22, pointsMax: 30 },
@@ -813,6 +1000,9 @@ $leaderboard = fetchLeaderboard($db);
         let gameRunning = false;
         let gamePaused = false;
         let reloadTimeout = null;
+        let reloadActive = false;
+        let reloadSequence = [];
+        let reloadStep = 0;
         let rafId = null;
         let chickenId = 0;
         let lastFrameTime = 0;
@@ -862,6 +1052,144 @@ $leaderboard = fetchLeaderboard($db);
 
         function setStatus(message) {
             statusText.textContent = message;
+        }
+
+        function isArrowKey(key) {
+            return reloadDirections.includes(key);
+        }
+
+        function buildReloadSequence() {
+            const sequence = [];
+            let previousDirection = "";
+
+            for (let i = 0; i < reloadSequenceLength; i += 1) {
+                const options = previousDirection
+                    ? reloadDirections.filter((direction) => direction !== previousDirection)
+                    : reloadDirections;
+                const nextDirection = options[Math.floor(Math.random() * options.length)];
+                sequence.push(nextDirection);
+                previousDirection = nextDirection;
+            }
+
+            return sequence;
+        }
+
+        function shotgunMarkup() {
+            const pumpOffset = reloadStep > 0 ? Math.min(18, reloadStep * 4) : 0;
+
+            return `
+                <svg viewBox="0 0 360 120" aria-hidden="true">
+                    <rect x="34" y="52" width="196" height="12" rx="6" fill="#6e5130"></rect>
+                    <rect x="228" y="48" width="104" height="20" rx="8" fill="#405066"></rect>
+                    <rect x="${120 - pumpOffset}" y="44" width="42" height="28" rx="8" fill="#d4a355"></rect>
+                    <rect x="328" y="52" width="20" height="12" rx="6" fill="#96b6d9"></rect>
+                    <path d="M34 58 C24 74, 18 88, 24 104 L54 104 C62 86, 72 76, 94 70 L94 58 Z" fill="#815634"></path>
+                    <rect x="86" y="66" width="44" height="10" rx="5" fill="#1f2734"></rect>
+                </svg>
+            `;
+        }
+
+        function hideReloadOverlay() {
+            reloadOverlay.classList.add("hidden");
+            reloadOverlay.innerHTML = "";
+        }
+
+        function pulseReloadOverlay() {
+            const card = reloadOverlay.querySelector(".reload-card");
+            if (!card) {
+                return;
+            }
+            card.classList.remove("shake");
+            void card.offsetWidth;
+            card.classList.add("shake");
+        }
+
+        function renderReloadOverlay(message = "Follow the arrows to chamber the shotgun.") {
+            if (!reloadActive) {
+                hideReloadOverlay();
+                return;
+            }
+
+            reloadOverlay.innerHTML = `
+                <div class="reload-card">
+                    <h3 class="reload-title">Shotgun Reload</h3>
+                    <p class="reload-copy">${escapeHtml(message)}</p>
+                    <div class="reload-weapon">${shotgunMarkup()}</div>
+                    <div class="reload-meta">
+                        <span>Step ${reloadStep + 1} / ${reloadSequence.length}</span>
+                        <span>Ammo empty</span>
+                    </div>
+                    <div class="reload-sequence">
+                        ${reloadSequence.map((direction, index) => `
+                            <span class="reload-step${index < reloadStep ? " done" : ""}${index === reloadStep ? " active" : ""}">
+                                ${reloadSymbols[direction]}
+                            </span>
+                        `).join("")}
+                    </div>
+                    <div class="reload-pad">
+                        ${reloadDirections.map((direction) => `
+                            <button class="reload-arrow" type="button" data-reload-key="${direction}">
+                                ${reloadSymbols[direction]}
+                            </button>
+                        `).join("")}
+                    </div>
+                </div>
+            `;
+            reloadOverlay.classList.remove("hidden");
+        }
+
+        function beginReloadChallenge() {
+            if (!gameRunning || gamePaused || reloadActive) {
+                return;
+            }
+
+            reloadActive = true;
+            reloadSequence = buildReloadSequence();
+            reloadStep = 0;
+            renderReloadOverlay("Ammo empty. Use arrow keys or tap the arrows to re-chamber the shotgun.");
+            setStatus("Ammo empty. Follow the arrow sequence to reload.");
+        }
+
+        function finishReloadChallenge() {
+            reloadActive = false;
+            reloadSequence = [];
+            reloadStep = 0;
+            ammo = magSize;
+            updateHud();
+            hideReloadOverlay();
+            setStatus("Shotgun ready. Keep shooting.");
+        }
+
+        function cancelReloadChallenge() {
+            reloadActive = false;
+            reloadSequence = [];
+            reloadStep = 0;
+            hideReloadOverlay();
+        }
+
+        function handleReloadInput(key) {
+            if (!reloadActive || !isArrowKey(key)) {
+                return false;
+            }
+
+            if (key === reloadSequence[reloadStep]) {
+                reloadStep += 1;
+
+                if (reloadStep >= reloadSequence.length) {
+                    finishReloadChallenge();
+                    return true;
+                }
+
+                renderReloadOverlay("Good. Keep pumping the shotgun.");
+                setStatus(`Reloading... ${reloadStep}/${reloadSequence.length}`);
+                return true;
+            }
+
+            reloadStep = 0;
+            renderReloadOverlay("Wrong direction. Start the reload again.");
+            pulseReloadOverlay();
+            setStatus("Wrong direction. Start the reload again.");
+            return true;
         }
 
         function buildLeaderboardMarkup() {
@@ -973,6 +1301,7 @@ $leaderboard = fetchLeaderboard($db);
                             <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
                             <ul class="tutorial-list">
                                 <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
+                                <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
                                 <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
                                 <li class="tutorial-item"><span class="tutorial-title">Leaderboard</span>Register with a unique nickname, then your finished rounds can be saved to the ranking table.</li>
                             </ul>
@@ -1226,23 +1555,19 @@ $leaderboard = fetchLeaderboard($db);
         }
 
         function reload() {
-            if (!gameRunning || gamePaused || reloadTimeout) {
+            if (!gameRunning || gamePaused || reloadActive) {
                 return;
             }
-            setStatus("Reloading...");
-            reloadTimeout = setTimeout(() => {
-                if (!gameRunning) {
-                    return;
-                }
-                ammo = magSize;
-                reloadTimeout = null;
-                updateHud();
-                setStatus("Reloaded. Keep shooting.");
-            }, 1200);
+            beginReloadChallenge();
         }
 
         function shootAt(clientX, clientY, chicken = null, directHit = false) {
             if (!gameRunning || gamePaused) {
+                return;
+            }
+
+            if (reloadActive) {
+                setStatus("Finish the arrow reload before shooting again.");
                 return;
             }
 
@@ -1251,10 +1576,6 @@ $leaderboard = fetchLeaderboard($db);
             const y = clientY - rect.top;
             createEffect(x, y, "muzzle-flash");
 
-            if (reloadTimeout) {
-                setStatus("Magazine empty. Wait for reload.");
-                return;
-            }
             if (ammo <= 0) {
                 reload();
                 return;
@@ -1348,6 +1669,7 @@ $leaderboard = fetchLeaderboard($db);
             clearTimeout(reloadTimeout);
             cancelAnimationFrame(rafId);
             reloadTimeout = null;
+            cancelReloadChallenge();
             rafId = null;
             lastFrameTime = 0;
             spawnAccumulator = 0;
@@ -1383,6 +1705,7 @@ $leaderboard = fetchLeaderboard($db);
             clearTimeout(reloadTimeout);
             cancelAnimationFrame(rafId);
             reloadTimeout = null;
+            cancelReloadChallenge();
             rafId = null;
             chickens.forEach((chicken) => chicken.el.remove());
             chickens.clear();
@@ -1429,6 +1752,13 @@ $leaderboard = fetchLeaderboard($db);
         menuControl.addEventListener("click", openPauseMenu);
         restartControl.addEventListener("click", restartGame);
         gameArea.addEventListener("click", (event) => shootAt(event.clientX, event.clientY, null, false));
+        reloadOverlay.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-reload-key]");
+            if (!button) {
+                return;
+            }
+            handleReloadInput(button.dataset.reloadKey);
+        });
 
         window.addEventListener("pointermove", (event) => {
             pointerX = event.clientX;
@@ -1448,6 +1778,12 @@ $leaderboard = fetchLeaderboard($db);
 
         window.addEventListener("resize", updateViewport, { passive: true });
         window.addEventListener("keydown", (event) => {
+            if (reloadActive && !gamePaused && isArrowKey(event.key)) {
+                event.preventDefault();
+                handleReloadInput(event.key);
+                return;
+            }
+
             const key = event.key.toLowerCase();
 
             if (key === "r") {
@@ -1477,5 +1813,3 @@ $leaderboard = fetchLeaderboard($db);
     </script>
 </body>
 </html>
-    </style>
-</head>
