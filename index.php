@@ -26,10 +26,20 @@ try {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             score INTEGER NOT NULL,
+            clicks INTEGER NOT NULL DEFAULT 0,
+            hits INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )'
     );
+    $scoreColumns = $db->query('PRAGMA table_info(scores)')->fetchAll() ?: [];
+    $scoreColumnNames = array_column($scoreColumns, 'name');
+    if (!in_array('clicks', $scoreColumnNames, true)) {
+        $db->exec('ALTER TABLE scores ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!in_array('hits', $scoreColumnNames, true)) {
+        $db->exec('ALTER TABLE scores ADD COLUMN hits INTEGER NOT NULL DEFAULT 0');
+    }
 } catch (Throwable $exception) {
     $dbError = $exception->getMessage();
 }
@@ -49,7 +59,11 @@ function fetchLeaderboard(?PDO $db, int $limit = 10): array
     }
 
     $statement = $db->prepare(
-        'SELECT u.nickname, MAX(s.score) AS best_score, COUNT(s.id) AS rounds_played
+        'SELECT
+            u.nickname,
+            MAX(s.score) AS best_score,
+            COUNT(s.id) AS rounds_played,
+            ROUND(MAX(CASE WHEN s.clicks > 0 THEN (CAST(s.hits AS REAL) / s.clicks) * 100 ELSE 0 END), 1) AS best_accuracy
          FROM scores s
          INNER JOIN users u ON u.id = s.user_id
          GROUP BY s.user_id, u.nickname
@@ -60,6 +74,66 @@ function fetchLeaderboard(?PDO $db, int $limit = 10): array
     $statement->execute();
 
     return $statement->fetchAll() ?: [];
+}
+
+function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $summaryStatement = $db->prepare(
+        'SELECT
+            COUNT(id) AS rounds_played,
+            MAX(CASE WHEN clicks > 0 THEN (CAST(hits AS REAL) / clicks) * 100 ELSE 0 END) AS best_accuracy,
+            MAX(score) AS best_score
+        FROM scores
+        WHERE user_id = :user_id'
+    );
+    $summaryStatement->execute([':user_id' => (int) $user['id']]);
+    $summary = $summaryStatement->fetch() ?: [];
+
+    $bestRoundStatement = $db->prepare(
+        'SELECT
+            score,
+            clicks,
+            hits,
+            created_at,
+            ROUND(CASE WHEN clicks > 0 THEN (CAST(hits AS REAL) / clicks) * 100 ELSE 0 END, 1) AS accuracy,
+            ROUND(CASE WHEN clicks > 0 THEN CAST(score AS REAL) / clicks ELSE 0 END, 2) AS points_per_shot
+        FROM scores
+        WHERE user_id = :user_id
+        ORDER BY accuracy DESC, score DESC, created_at ASC
+        LIMIT 1'
+    );
+    $bestRoundStatement->execute([':user_id' => (int) $user['id']]);
+    $bestRound = $bestRoundStatement->fetch() ?: null;
+
+    $historyStatement = $db->prepare(
+        'SELECT
+            score,
+            clicks,
+            hits,
+            created_at,
+            ROUND(CASE WHEN clicks > 0 THEN (CAST(hits AS REAL) / clicks) * 100 ELSE 0 END, 1) AS accuracy,
+            ROUND(CASE WHEN clicks > 0 THEN CAST(score AS REAL) / clicks ELSE 0 END, 2) AS points_per_shot
+        FROM scores
+        WHERE user_id = :user_id
+        ORDER BY id DESC
+        LIMIT :limit'
+    );
+    $historyStatement->bindValue(':user_id', (int) $user['id'], PDO::PARAM_INT);
+    $historyStatement->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $historyStatement->execute();
+    $history = array_reverse($historyStatement->fetchAll() ?: []);
+
+    return [
+        'rounds_played' => (int) ($summary['rounds_played'] ?? 0),
+        'best_accuracy' => round((float) ($summary['best_accuracy'] ?? 0), 1),
+        'best_score' => (int) ($summary['best_score'] ?? 0),
+        'best_accuracy_round' => $bestRound,
+        'history' => $history,
+    ];
 }
 
 function getSessionUser(?PDO $db): ?array
@@ -88,10 +162,12 @@ if (isset($_GET['action'])) {
     }
 
     if ($action === 'leaderboard') {
+        $user = getSessionUser($db);
         jsonResponse([
             'ok' => true,
             'leaderboard' => fetchLeaderboard($db),
-            'user' => getSessionUser($db),
+            'user' => $user,
+            'analytics' => fetchPlayerAnalytics($db, $user),
         ]);
     }
 
@@ -143,6 +219,7 @@ if (isset($_GET['action'])) {
             'message' => 'Registration successful.',
             'user' => getSessionUser($db),
             'leaderboard' => fetchLeaderboard($db),
+            'analytics' => fetchPlayerAnalytics($db, getSessionUser($db)),
         ]);
     }
 
@@ -172,12 +249,17 @@ if (isset($_GET['action'])) {
                 'nickname' => $user['nickname'],
             ],
             'leaderboard' => fetchLeaderboard($db),
+            'analytics' => fetchPlayerAnalytics($db, [
+                'id' => (int) $user['id'],
+                'username' => $user['username'],
+                'nickname' => $user['nickname'],
+            ]),
         ]);
     }
 
     if ($action === 'logout') {
         unset($_SESSION['user_id']);
-        jsonResponse(['ok' => true, 'message' => 'Logged out.', 'leaderboard' => fetchLeaderboard($db)]);
+        jsonResponse(['ok' => true, 'message' => 'Logged out.', 'leaderboard' => fetchLeaderboard($db), 'analytics' => null]);
     }
 
     if ($action === 'save_score') {
@@ -191,16 +273,28 @@ if (isset($_GET['action'])) {
             jsonResponse(['ok' => false, 'message' => 'Invalid score.'], 422);
         }
 
-        $insert = $db->prepare('INSERT INTO scores (user_id, score) VALUES (:user_id, :score)');
+        $clicks = filter_input(INPUT_POST, 'clicks', FILTER_VALIDATE_INT);
+        $hits = filter_input(INPUT_POST, 'hits', FILTER_VALIDATE_INT);
+        if ($clicks === false || $clicks === null || $clicks < 0) {
+            jsonResponse(['ok' => false, 'message' => 'Invalid clicks value.'], 422);
+        }
+        if ($hits === false || $hits === null || $hits < 0 || $hits > $clicks) {
+            jsonResponse(['ok' => false, 'message' => 'Invalid hits value.'], 422);
+        }
+
+        $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits) VALUES (:user_id, :score, :clicks, :hits)');
         $insert->execute([
             ':user_id' => (int) $user['id'],
             ':score' => (int) $score,
+            ':clicks' => (int) $clicks,
+            ':hits' => (int) $hits,
         ]);
 
         jsonResponse([
             'ok' => true,
             'message' => 'Score saved.',
             'leaderboard' => fetchLeaderboard($db),
+            'analytics' => fetchPlayerAnalytics($db, $user),
         ]);
     }
 
@@ -209,6 +303,7 @@ if (isset($_GET['action'])) {
 
 $sessionUser = getSessionUser($db);
 $leaderboard = fetchLeaderboard($db);
+$playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -260,7 +355,7 @@ $leaderboard = fetchLeaderboard($db);
             transform: translateX(-50%);
             z-index: 20;
             display: grid;
-            grid-template-columns: repeat(7, minmax(90px, 1fr));
+            grid-template-columns: repeat(10, minmax(78px, 1fr));
             gap: 12px;
             width: min(1180px, calc(100vw - 24px));
             pointer-events: none;
@@ -639,12 +734,67 @@ $leaderboard = fetchLeaderboard($db);
         .feedback.success { color: #b8f3bb; }
         .leaderboard-row {
             display: grid;
-            grid-template-columns: auto 1fr auto auto;
+            grid-template-columns: auto 1fr auto auto auto;
             gap: 10px;
             align-items: center;
         }
         .leaderboard-name { font-weight: 700; }
         .leaderboard-score { color: #fff7cb; font-weight: 700; }
+        .analytics-grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .stats-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+        .stats-list li {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .chart-card {
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .chart {
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            min-height: 180px;
+            padding-top: 10px;
+        }
+        .chart-bar-wrap {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+        }
+        .chart-bar {
+            width: 100%;
+            min-height: 8px;
+            border-radius: 999px 999px 8px 8px;
+            background: linear-gradient(180deg, #ffe388 0%, #ffcb45 100%);
+            box-shadow: 0 10px 20px rgba(255, 203, 69, 0.18);
+        }
+        .chart-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+        .chart-value {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff7cb;
+        }
         .empty-state {
             padding: 14px;
             border-radius: 16px;
@@ -765,6 +915,7 @@ $leaderboard = fetchLeaderboard($db);
                 gap: 10px;
             }
             .overlay-grid, .auth-grid { grid-template-columns: 1fr; }
+            .analytics-grid { grid-template-columns: 1fr; }
             .overlay-card { padding: 22px; }
         }
         @media (max-width: 700px) {
@@ -893,6 +1044,9 @@ $leaderboard = fetchLeaderboard($db);
             .leaderboard-row .muted {
                 grid-column: 2;
             }
+            .chart {
+                min-height: 140px;
+            }
             .crosshair {
                 display: none;
             }
@@ -925,6 +1079,10 @@ $leaderboard = fetchLeaderboard($db);
             <div class="panel"><span class="panel-label">Score</span><span class="panel-value" id="score">0</span></div>
             <div class="panel"><span class="panel-label">Time Left</span><span class="panel-value" id="time">45</span></div>
             <div class="panel"><span class="panel-label">Ammo</span><span class="panel-value" id="ammo">6 / 6</span></div>
+            <div class="panel"><span class="panel-label">Clicks</span><span class="panel-value" id="clickCount">0</span></div>
+            <div class="panel"><span class="panel-label">Hits</span><span class="panel-value" id="hits">0</span></div>
+            <div class="panel"><span class="panel-label">Accuracy</span><span class="panel-value" id="accuracy">0.0%</span></div>
+            <div class="panel"><span class="panel-label">PPS</span><span class="panel-value" id="pointsPerShot">0.00</span></div>
             <div class="panel"><span class="panel-label">Best</span><span class="panel-value" id="best">0</span></div>
             <div class="panel"><span class="panel-label">Player</span><span class="panel-value" id="playerName"><?= htmlspecialchars($sessionUser['nickname'] ?? 'Guest', ENT_QUOTES, 'UTF-8') ?></span></div>
             <button class="button secondary hud-button menu-button" id="menuControl" type="button">Menu</button>
@@ -950,6 +1108,7 @@ $leaderboard = fetchLeaderboard($db);
             dbAvailable: <?= $dbError ? 'false' : 'true' ?>,
             user: <?= json_encode($sessionUser, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
             leaderboard: <?= json_encode($leaderboard, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+            analytics: <?= json_encode($playerAnalytics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
             dbError: <?= json_encode($dbError, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
         };
 
@@ -958,6 +1117,10 @@ $leaderboard = fetchLeaderboard($db);
         const scoreEl = document.getElementById("score");
         const timeEl = document.getElementById("time");
         const ammoEl = document.getElementById("ammo");
+        const clickCountEl = document.getElementById("clickCount");
+        const hitsEl = document.getElementById("hits");
+        const accuracyEl = document.getElementById("accuracy");
+        const pointsPerShotEl = document.getElementById("pointsPerShot");
         const bestEl = document.getElementById("best");
         const overlay = document.getElementById("overlay");
         const reloadOverlay = document.getElementById("reloadOverlay");
@@ -996,6 +1159,8 @@ $leaderboard = fetchLeaderboard($db);
         let score = 0;
         let timeLeft = totalTime;
         let ammo = magSize;
+        let clickCount = 0;
+        let hitCount = 0;
         let bestScore = Number(localStorage.getItem("chicken-shooting-best") || 0);
         let gameRunning = false;
         let gamePaused = false;
@@ -1014,6 +1179,26 @@ $leaderboard = fetchLeaderboard($db);
 
         bestEl.textContent = bestScore;
         playerNameEl.textContent = appState.user?.nickname || "Guest";
+
+        function calculateAccuracy(clicksValue, hitsValue) {
+            if (clicksValue <= 0) {
+                return 0;
+            }
+
+            return (hitsValue / clicksValue) * 100;
+        }
+
+        function calculatePointsPerShot(scoreValue, clicksValue) {
+            if (clicksValue <= 0) {
+                return 0;
+            }
+
+            return scoreValue / clicksValue;
+        }
+
+        function formatMetric(value, digits = 1) {
+            return Number(value || 0).toFixed(digits);
+        }
 
         function escapeHtml(value) {
             return String(value)
@@ -1045,6 +1230,10 @@ $leaderboard = fetchLeaderboard($db);
             scoreEl.textContent = score;
             timeEl.textContent = timeLeft;
             ammoEl.textContent = `${ammo} / ${magSize}`;
+            clickCountEl.textContent = clickCount;
+            hitsEl.textContent = hitCount;
+            accuracyEl.textContent = `${formatMetric(calculateAccuracy(clickCount, hitCount), 1)}%`;
+            pointsPerShotEl.textContent = formatMetric(calculatePointsPerShot(score, clickCount), 2);
             ammoEl.classList.toggle("warning", ammo <= 1);
             bestEl.textContent = bestScore;
             playerNameEl.textContent = appState.user?.nickname || "Guest";
@@ -1206,9 +1395,66 @@ $leaderboard = fetchLeaderboard($db);
                             <span class="leaderboard-rank">#${index + 1}</span>
                             <span class="leaderboard-name">${escapeHtml(entry.nickname)}</span>
                             <span class="leaderboard-score">${entry.best_score} pts</span>
+                            <span class="muted">${formatMetric(entry.best_accuracy, 1)}% acc</span>
                             <span class="muted">${entry.rounds_played} rounds</span>
                         </div>
                     `).join("")}
+                </div>
+            `;
+        }
+
+        function buildProgressChartMarkup() {
+            const history = appState.analytics?.history || [];
+            if (!history.length) {
+                return `<div class="empty-state">Play a few logged-in rounds to build your progress chart.</div>`;
+            }
+
+            const maxScore = Math.max(...history.map((round) => Number(round.score) || 0), 1);
+
+            return `
+                <div class="chart-card">
+                    <h3>Progress Chart</h3>
+                    <p>Your latest ${history.length} saved rounds by score.</p>
+                    <div class="chart">
+                        ${history.map((round, index) => {
+                            const scoreValue = Number(round.score) || 0;
+                            const barHeight = Math.max(8, Math.round((scoreValue / maxScore) * 120));
+                            return `
+                                <div class="chart-bar-wrap" title="Round ${index + 1}: ${scoreValue} pts, ${round.accuracy}% accuracy">
+                                    <span class="chart-value">${scoreValue}</span>
+                                    <div class="chart-bar" style="height:${barHeight}px"></div>
+                                    <span class="chart-label">R${index + 1}</span>
+                                </div>
+                            `;
+                        }).join("")}
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildAnalyticsMarkup() {
+            if (!appState.dbAvailable || !appState.user) {
+                return "";
+            }
+
+            const analytics = appState.analytics;
+            const bestRound = analytics?.best_accuracy_round;
+
+            return `
+                <div class="analytics-grid">
+                    <div class="card-section">
+                        <h3>Player Analytics</h3>
+                        <ul class="stats-list">
+                            <li>Rounds played: <strong>${analytics?.rounds_played || 0}</strong></li>
+                            <li>Best score: <strong>${analytics?.best_score || 0}</strong></li>
+                            <li>Best accuracy: <strong>${formatMetric(analytics?.best_accuracy || 0, 1)}%</strong></li>
+                            <li>Most accurate round: <strong>${bestRound ? `${bestRound.accuracy}%` : "No saved rounds yet"}</strong></li>
+                            <li>Best round points per shot: <strong>${bestRound ? formatMetric(bestRound.points_per_shot, 2) : "0.00"}</strong></li>
+                        </ul>
+                    </div>
+                    <div>
+                        ${buildProgressChartMarkup()}
+                    </div>
                 </div>
             `;
         }
@@ -1285,6 +1531,7 @@ $leaderboard = fetchLeaderboard($db);
                 if (data.ok) {
                     appState.leaderboard = data.leaderboard || [];
                     appState.user = data.user || appState.user;
+                    appState.analytics = data.analytics || null;
                     updateHud();
                 }
             } catch (error) {
@@ -1331,6 +1578,7 @@ $leaderboard = fetchLeaderboard($db);
                     <h2>Leaderboard</h2>
                     <p>Best score for each registered nickname.</p>
                     ${buildLeaderboardMarkup()}
+                    ${buildAnalyticsMarkup()}
                     <div class="button-row" style="margin-top:18px;">
                         <button class="button secondary" type="button" data-action="showIntro">Back</button>
                         ${gameRunning || gamePaused ? '<button class="button" type="button" data-action="openPauseMenu">Game Menu</button>' : '<button class="button" type="button" data-action="startGame">Start Hunt</button>'}
@@ -1355,6 +1603,10 @@ $leaderboard = fetchLeaderboard($db);
                     <ul class="menu-list">
                         <li>Current score: <strong>${score}</strong></li>
                         <li>Time left: <strong>${timeLeft}</strong> seconds</li>
+                        <li>Total clicks: <strong>${clickCount}</strong></li>
+                        <li>Hits: <strong>${hitCount}</strong></li>
+                        <li>Accuracy: <strong>${formatMetric(calculateAccuracy(clickCount, hitCount), 1)}%</strong></li>
+                        <li>Points per shot: <strong>${formatMetric(calculatePointsPerShot(score, clickCount), 2)}</strong></li>
                         <li>Logged in as: <strong>${escapeHtml(appState.user?.nickname || "Guest")}</strong></li>
                     </ul>
                     <div class="button-row" style="margin-top:18px;">
@@ -1389,6 +1641,7 @@ $leaderboard = fetchLeaderboard($db);
                     if (response.ok) {
                         appState.user = response.user;
                         appState.leaderboard = response.leaderboard || appState.leaderboard;
+                        appState.analytics = response.analytics || null;
                         updateHud();
                         showIntroOverlay();
                     }
@@ -1403,6 +1656,7 @@ $leaderboard = fetchLeaderboard($db);
                     if (response.ok) {
                         appState.user = response.user;
                         appState.leaderboard = response.leaderboard || appState.leaderboard;
+                        appState.analytics = response.analytics || null;
                         updateHud();
                         showIntroOverlay();
                     }
@@ -1424,6 +1678,7 @@ $leaderboard = fetchLeaderboard($db);
                     if (response.ok) {
                         appState.user = null;
                         appState.leaderboard = response.leaderboard || [];
+                        appState.analytics = response.analytics || null;
                         updateHud();
                         showIntroOverlay();
                     }
@@ -1566,6 +1821,9 @@ $leaderboard = fetchLeaderboard($db);
                 return;
             }
 
+            clickCount += 1;
+            updateHud();
+
             if (reloadActive) {
                 setStatus("Finish the arrow reload before shooting again.");
                 return;
@@ -1586,6 +1844,7 @@ $leaderboard = fetchLeaderboard($db);
 
             if (directHit && chicken && chicken.alive) {
                 chicken.alive = false;
+                hitCount += 1;
                 score += chicken.points;
                 updateHud();
                 setStatus(`Direct hit! +${chicken.points} points`);
@@ -1654,9 +1913,12 @@ $leaderboard = fetchLeaderboard($db);
             }
             const formData = new FormData();
             formData.append("score", String(score));
+            formData.append("clicks", String(clickCount));
+            formData.append("hits", String(hitCount));
             const response = await postAction("save_score", formData);
             if (response.ok && response.leaderboard) {
                 appState.leaderboard = response.leaderboard;
+                appState.analytics = response.analytics || null;
             } else if (!response.ok) {
                 setStatus(response.message || "Could not save score.");
             }
@@ -1664,6 +1926,10 @@ $leaderboard = fetchLeaderboard($db);
 
         async function endGame(endedEarly = false) {
             const finalScore = score;
+            const finalClicks = clickCount;
+            const finalHits = hitCount;
+            const finalAccuracy = calculateAccuracy(finalClicks, finalHits);
+            const finalPointsPerShot = calculatePointsPerShot(finalScore, finalClicks);
             gameRunning = false;
             gamePaused = false;
             clearTimeout(reloadTimeout);
@@ -1688,7 +1954,14 @@ $leaderboard = fetchLeaderboard($db);
             overlay.innerHTML = `
                 <div class="overlay-card">
                     <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
-                    <p>You scored <strong>${finalScore}</strong> points. Best local score: <strong>${bestScore}</strong>. ${appState.user ? "Your round was saved to the leaderboard." : "Log in to save future rounds to the leaderboard."}</p>
+                    <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
+                    <ul class="stats-list" style="margin:18px 0;">
+                        <li>Clicks: <strong>${finalClicks}</strong></li>
+                        <li>Hits: <strong>${finalHits}</strong></li>
+                        <li>Accuracy: <strong>${formatMetric(finalAccuracy, 1)}%</strong></li>
+                        <li>Points per shot: <strong>${formatMetric(finalPointsPerShot, 2)}</strong></li>
+                        <li>Best local score: <strong>${bestScore}</strong></li>
+                    </ul>
                     <div class="button-row">
                         <button class="button" type="button" data-action="restartGame">Play Again</button>
                         <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
@@ -1712,6 +1985,8 @@ $leaderboard = fetchLeaderboard($db);
             score = 0;
             timeLeft = totalTime;
             ammo = magSize;
+            clickCount = 0;
+            hitCount = 0;
             chickenId = 0;
             lastFrameTime = 0;
             spawnAccumulator = 0;
