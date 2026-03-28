@@ -690,6 +690,10 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             flex-wrap: wrap;
         }
 
+        .tutorial-actions {
+            margin-top: 28px;
+        }
+
         .button {
             border: 0;
             border-radius: 999px;
@@ -1242,12 +1246,12 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         let tutorialStep = 0;
         let tutorialTargetId = null;
 
-        const tutorialSteps = [
-            "Klikni na jasno oznacenu kokosku. Ova prva meta je veca i sporija da lakse udjes u igru.",
-            "Odlicno. Pogodi jos jednu sporiju kokosku bez zurbe.",
-            "Super ide. Pogodi jos jednu i spreman si za pravu partiju.",
-            "Bravo! Tutorijal je zavrsen. Sledeca runda je standardna igra."
-        ];
+       const tutorialSteps = [
+    "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
+    "Great. Hit another slower chicken without rushing.",
+    "Nice work. Hit one more and you'll be ready for the real game.",
+    "Well done! The tutorial is complete. The next round is the standard game."
+];
 
         bestEl.textContent = bestScore;
         playerNameEl.textContent = appState.user?.nickname || "Guest";
@@ -1733,7 +1737,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                         <div class="card-section">
                             <h1>Chicken Shooting</h1>
                             <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
-                            ${showTutorialComplete ? '<p><strong>TTutorial successfully accomplished.</strong> Now you can run real game or practice again.</p>' : ""}
+                            ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can run real game or practice again.</p>' : ""}
                             <ul class="tutorial-list">
                                 <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                                 <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
@@ -2246,7 +2250,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             updateViewport();
             updateHud();
             setTutorialMessage(tutorialSteps[0]);
-            setStatus("Tutorijal je aktivan. Prati tekst iznad i pogodi oznacenu metu.");
+            setStatus("Tutorial is active. Follow text on top and shoot marked chicken.");
             spawnTutorialChicken();
             rafId = requestAnimationFrame(animateChickens);
         }
