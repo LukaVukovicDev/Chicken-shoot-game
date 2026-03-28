@@ -441,6 +441,42 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             pointer-events: none;
         }
 
+        .tutorial-banner {
+            position: absolute;
+            top: 118px;
+            left: 50%;
+            z-index: 21;
+            width: min(720px, calc(100vw - 28px));
+            transform: translateX(-50%);
+            padding: 14px 18px;
+            border-radius: 18px;
+            background: rgba(10, 28, 22, 0.84);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 14px 28px rgba(8, 20, 14, 0.24);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .tutorial-banner.hidden {
+            display: none;
+        }
+
+        .tutorial-banner-title {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.76rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #fff1a8;
+        }
+
+        .tutorial-banner-copy {
+            margin: 0;
+            color: var(--text);
+            font-size: clamp(0.96rem, 2vw, 1.08rem);
+            line-height: 1.45;
+        }
+
         .overlay {
             position: absolute;
             inset: 0;
@@ -857,6 +893,16 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         }
         .chicken svg { width: 100%; height: 100%; overflow: visible; pointer-events: none; }
         .chicken.hit { animation: pop 0.32s ease forwards; }
+        .chicken.tutorial-target::after {
+            content: "";
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 244, 159, 0.95);
+            box-shadow: 0 0 0 10px rgba(255, 244, 159, 0.18);
+            animation: tutorial-ring 1.25s ease-in-out infinite;
+            pointer-events: none;
+        }
         .muzzle-flash, .score-pop {
             position: absolute;
             pointer-events: none;
@@ -902,6 +948,11 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         @keyframes pop { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.35) rotate(26deg); } }
         @keyframes fade-shot { from { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.4); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(2); } }
         @keyframes float-score { from { opacity: 1; transform: translate3d(-50%, -50%, 0) translateY(0); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) translateY(-42px); } }
+        @keyframes tutorial-ring {
+            0% { transform: scale(0.88); opacity: 0.78; }
+            55% { transform: scale(1.06); opacity: 1; }
+            100% { transform: scale(1.18); opacity: 0.2; }
+        }
         @keyframes reload-shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-8px); }
@@ -1033,6 +1084,11 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                 text-align: center;
                 border-radius: 12px;
             }
+            .tutorial-banner {
+                top: 198px;
+                width: calc(100vw - 20px);
+                padding: 12px 14px;
+            }
             .chicken { width: 68px; height: 68px; }
             .sun { width: 78px; height: 78px; top: 96px; right: 16px; }
             .cloud { transform: scale(0.85); transform-origin: left top; }
@@ -1095,6 +1151,10 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         <div class="cloud three"></div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
+        <div class="tutorial-banner hidden" id="tutorialBanner" aria-live="polite">
+            <span class="tutorial-banner-title">Tutorial</span>
+            <p class="tutorial-banner-copy" id="tutorialText">Prati uputstvo i pogodi oznacenu kokosku.</p>
+        </div>
         <div class="instructions" id="statusText">Click chickens before the timer ends. Use Menu or Esc for the game menu, R to restart instantly, and when ammo hits 0 use the arrow reload prompt to chamber the shotgun.</div>
         <div class="reload-overlay hidden" id="reloadOverlay" aria-live="polite"></div>
         <div class="overlay" id="overlay"></div>
@@ -1125,6 +1185,8 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         const overlay = document.getElementById("overlay");
         const reloadOverlay = document.getElementById("reloadOverlay");
         const statusText = document.getElementById("statusText");
+        const tutorialBanner = document.getElementById("tutorialBanner");
+        const tutorialText = document.getElementById("tutorialText");
         const crosshair = document.getElementById("crosshair");
         const menuControl = document.getElementById("menuControl");
         const restartControl = document.getElementById("restartControl");
@@ -1176,6 +1238,16 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
         let pointerX = window.innerWidth / 2;
         let pointerY = window.innerHeight / 2;
         let crosshairQueued = false;
+        let tutorialMode = false;
+        let tutorialStep = 0;
+        let tutorialTargetId = null;
+
+        const tutorialSteps = [
+            "Klikni na jasno oznacenu kokosku. Ova prva meta je veca i sporija da lakse udjes u igru.",
+            "Odlicno. Pogodi jos jednu sporiju kokosku bez zurbe.",
+            "Super ide. Pogodi jos jednu i spreman si za pravu partiju.",
+            "Bravo! Tutorijal je zavrsen. Sledeca runda je standardna igra."
+        ];
 
         bestEl.textContent = bestScore;
         playerNameEl.textContent = appState.user?.nickname || "Guest";
@@ -1276,6 +1348,86 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
 
         function setStatus(message) {
             statusText.textContent = message;
+        }
+
+        function setTutorialMessage(message = "") {
+            tutorialText.textContent = message;
+            tutorialBanner.classList.toggle("hidden", !tutorialMode || !message);
+        }
+
+        function clearTutorialTarget() {
+            if (tutorialTargetId === null) {
+                return;
+            }
+            const previousTarget = chickens.get(tutorialTargetId);
+            if (previousTarget) {
+                previousTarget.el.classList.remove("tutorial-target");
+            }
+            tutorialTargetId = null;
+        }
+
+        function highlightTutorialTarget() {
+            clearTutorialTarget();
+            if (!tutorialMode) {
+                return;
+            }
+            const nextTarget = [...chickens.values()].find((entry) => entry.alive);
+            if (!nextTarget) {
+                return;
+            }
+            tutorialTargetId = nextTarget.id;
+            nextTarget.el.classList.add("tutorial-target");
+        }
+
+        function spawnTutorialChicken() {
+            if (!tutorialMode || !gameRunning) {
+                return;
+            }
+
+            const tutorialType = chickenTypes[0];
+            const size = Math.max(96, Math.round(Math.min(viewport.width, viewport.height) * 0.12));
+            const y = Math.max(viewport.topInset + 30, Math.min(viewport.height * 0.45, viewport.height - viewport.bottomInset - size - 20));
+            const direction = tutorialStep % 2 === 0 ? 1 : -1;
+            const speed = 88 + (tutorialStep * 10);
+
+            spawnChicken({
+                type: tutorialType,
+                size,
+                y,
+                direction,
+                speed,
+                tutorialTarget: true
+            });
+        }
+
+        function finishTutorialMode() {
+            tutorialMode = false;
+            tutorialStep = 0;
+            clearTutorialTarget();
+            setTutorialMessage("");
+            showIntroOverlay(true);
+        }
+
+        function advanceTutorialAfterHit() {
+            if (!tutorialMode) {
+                return;
+            }
+
+            tutorialStep += 1;
+
+            if (tutorialStep >= tutorialSteps.length - 1) {
+                setTutorialMessage(tutorialSteps[tutorialSteps.length - 1]);
+                setStatus("Tutorijal zavrsen. Standardna igra sada moze da pocne.");
+                setTimeout(() => endGame(true), 900);
+                return;
+            }
+
+            setTutorialMessage(tutorialSteps[tutorialStep]);
+            setStatus("Odlicno. Prati oznacenu kokosku i nastavi.");
+            window.setTimeout(() => {
+                spawnTutorialChicken();
+                highlightTutorialTarget();
+            }, 320);
         }
 
         function isArrowKey(key) {
@@ -1574,13 +1726,14 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             }
         }
 
-        function getIntroOverlayMarkup() {
+        function getIntroOverlayMarkup(showTutorialComplete = false) {
             return `
                 <div class="overlay-card">
                     <div class="overlay-grid">
                         <div class="card-section">
                             <h1>Chicken Shooting</h1>
                             <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
+                            ${showTutorialComplete ? '<p><strong>Tutorijal je uspesno zavrsen.</strong> Sada mozes da pokrenes punu rundu ili da ga ponovis.</p>' : ""}
                             <ul class="tutorial-list">
                                 <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                                 <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
@@ -1588,6 +1741,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                                 <li class="tutorial-item"><span class="tutorial-title">Leaderboard</span>Register with a unique nickname, then your finished rounds can be saved to the ranking table.</li>
                             </ul>
                             <div class="tutorial-actions">
+                                <button class="button secondary" type="button" data-action="startTutorial">Pokreni Tutorijal</button>
                                 <button class="button" type="button" data-action="startGame">Start Hunt</button>
                                 <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                             </div>
@@ -1601,8 +1755,8 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             `;
         }
 
-        function showIntroOverlay() {
-            overlay.innerHTML = getIntroOverlayMarkup();
+        function showIntroOverlay(showTutorialComplete = false) {
+            overlay.innerHTML = getIntroOverlayMarkup(showTutorialComplete);
             overlay.classList.remove("hidden");
             attachOverlayHandlers();
         }
@@ -1663,6 +1817,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             const logoutButton = overlay.querySelector('[data-action="logout"]');
             const resumeButton = overlay.querySelector('[data-action="resumeGame"]');
             const startButtons = overlay.querySelectorAll('[data-action="startGame"]');
+            const tutorialButtons = overlay.querySelectorAll('[data-action="startTutorial"]');
             const restartButtons = overlay.querySelectorAll('[data-action="restartGame"]');
             const endButtons = overlay.querySelectorAll('[data-action="endGame"]');
             const menuButtons = overlay.querySelectorAll('[data-action="openPauseMenu"]');
@@ -1701,6 +1856,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             openLeaderboardButton?.addEventListener("click", showLeaderboardOverlay);
             resumeButton?.addEventListener("click", resumeGameFromPause);
             startButtons.forEach((button) => button.addEventListener("click", startGame));
+            tutorialButtons.forEach((button) => button.addEventListener("click", startTutorialGame));
             restartButtons.forEach((button) => button.addEventListener("click", restartGame));
             endButtons.forEach((button) => button.addEventListener("click", () => endGame(true)));
             menuButtons.forEach((button) => button.addEventListener("click", openPauseMenu));
@@ -1786,19 +1942,19 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             return chickenTypes[3];
         }
 
-        function spawnChicken() {
+        function spawnChicken(options = {}) {
             if (!gameRunning || gamePaused || chickens.size >= spawnLimit) {
                 return;
             }
 
-            const size = Math.random() * 26 + 66;
+            const size = options.size ?? (Math.random() * 26 + 66);
             const upperBound = Math.max(80, viewport.height - viewport.bottomInset - size);
             const minY = Math.min(Math.max(56, viewport.topInset), Math.max(40, upperBound - 40));
             const maxY = Math.max(minY, upperBound);
-            const y = minY + Math.random() * Math.max(0, maxY - minY);
-            const direction = Math.random() > 0.5 ? 1 : -1;
-            const type = getRandomChickenType();
-            const speed = type.speedMin + Math.random() * (type.speedMax - type.speedMin);
+            const y = options.y ?? (minY + Math.random() * Math.max(0, maxY - minY));
+            const direction = options.direction ?? (Math.random() > 0.5 ? 1 : -1);
+            const type = options.type ?? getRandomChickenType();
+            const speed = options.speed ?? (type.speedMin + Math.random() * (type.speedMax - type.speedMin));
             const startX = direction === 1 ? -size - 30 : viewport.width + 30;
             const [body, wing, beak] = type.colors;
 
@@ -1822,7 +1978,8 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                 drift: Math.random() * 0.9 + 0.3,
                 phase: Math.random() * Math.PI * 2,
                 alive: true,
-                points: Math.round(type.pointsMin + ((speed - type.speedMin) / (type.speedMax - type.speedMin || 1)) * (type.pointsMax - type.pointsMin))
+                points: Math.round(type.pointsMin + ((speed - type.speedMin) / (type.speedMax - type.speedMin || 1)) * (type.pointsMax - type.pointsMin)),
+                tutorialTarget: Boolean(options.tutorialTarget)
             };
 
             chicken.addEventListener("click", (event) => {
@@ -1833,6 +1990,13 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             chickens.set(id, data);
             gameArea.appendChild(chicken);
             renderChicken(data);
+
+            if (data.tutorialTarget) {
+                tutorialTargetId = id;
+                chicken.classList.add("tutorial-target");
+            }
+
+            return data;
         }
 
         function removeChicken(id) {
@@ -1840,8 +2004,15 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             if (!chicken) {
                 return;
             }
+            if (tutorialTargetId === id) {
+                tutorialTargetId = null;
+            }
             chicken.el.remove();
             chickens.delete(id);
+
+            if (tutorialMode && chickens.size > 0 && tutorialTargetId === null) {
+                highlightTutorialTarget();
+            }
         }
 
         function reload() {
@@ -1885,11 +2056,18 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                 setStatus(`Direct hit! +${chicken.points} points`);
                 chicken.el.classList.add("hit");
                 createEffect(x, y, "score-pop", `+${chicken.points}`);
+                if (tutorialMode) {
+                    advanceTutorialAfterHit();
+                }
                 setTimeout(() => removeChicken(chicken.id), 280);
             } else {
-                score = Math.max(0, score - 2);
-                updateHud();
-                setStatus("Missed shot. The chickens are getting away.");
+                if (!tutorialMode) {
+                    score = Math.max(0, score - 2);
+                    updateHud();
+                    setStatus("Missed shot. The chickens are getting away.");
+                } else {
+                    setStatus("Nema veze, probaj ponovo. Prati kruzno oznacenu kokosku.");
+                }
             }
 
             if (ammo === 0) {
@@ -1912,12 +2090,12 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             spawnAccumulator += deltaMs;
             secondAccumulator += deltaMs;
 
-            if (spawnAccumulator >= spawnEveryMs) {
+            if (!tutorialMode && spawnAccumulator >= spawnEveryMs) {
                 spawnAccumulator -= spawnEveryMs;
                 spawnChicken();
             }
 
-            if (secondAccumulator >= 1000) {
+            if (!tutorialMode && secondAccumulator >= 1000) {
                 secondAccumulator -= 1000;
                 timeLeft -= 1;
                 updateHud();
@@ -1966,6 +2144,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             const finalAccuracy = calculateAccuracy(finalClicks, finalHits);
             const finalPointsPerShot = calculatePointsPerShot(finalScore, finalClicks);
             const playerLevel = classifyPlayerLevel(finalScore, finalAccuracy, finalPointsPerShot, finalHits);
+            const wasTutorialMode = tutorialMode;
             gameRunning = false;
             gamePaused = false;
             clearTimeout(reloadTimeout);
@@ -1977,15 +2156,23 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             spawnAccumulator = 0;
             secondAccumulator = 0;
 
-            if (finalScore > bestScore) {
+            if (!wasTutorialMode && finalScore > bestScore) {
                 bestScore = finalScore;
                 localStorage.setItem("chicken-shooting-best", String(bestScore));
             }
 
             chickens.forEach((chicken) => chicken.el.remove());
             chickens.clear();
+            clearTutorialTarget();
             updateHud();
-            await saveScoreIfLoggedIn();
+            if (!wasTutorialMode) {
+                await saveScoreIfLoggedIn();
+            }
+
+            if (wasTutorialMode) {
+                finishTutorialMode();
+                return;
+            }
 
             overlay.innerHTML = `
                 <div class="overlay-card">
@@ -2029,9 +2216,13 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             spawnAccumulator = 0;
             secondAccumulator = 0;
             gamePaused = false;
+            clearTutorialTarget();
         }
 
         function startGame() {
+            tutorialMode = false;
+            tutorialStep = 0;
+            setTutorialMessage("");
             overlay.classList.add("hidden");
             resetRoundState();
             gameRunning = true;
@@ -2046,7 +2237,25 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             rafId = requestAnimationFrame(animateChickens);
         }
 
+        function startTutorialGame() {
+            tutorialMode = true;
+            tutorialStep = 0;
+            overlay.classList.add("hidden");
+            resetRoundState();
+            gameRunning = true;
+            updateViewport();
+            updateHud();
+            setTutorialMessage(tutorialSteps[0]);
+            setStatus("Tutorijal je aktivan. Prati tekst iznad i pogodi oznacenu metu.");
+            spawnTutorialChicken();
+            rafId = requestAnimationFrame(animateChickens);
+        }
+
         function restartGame() {
+            if (tutorialMode) {
+                startTutorialGame();
+                return;
+            }
             startGame();
         }
 
