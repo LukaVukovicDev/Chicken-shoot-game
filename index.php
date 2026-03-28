@@ -1733,7 +1733,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                         <div class="card-section">
                             <h1>Chicken Shooting</h1>
                             <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
-                            ${showTutorialComplete ? '<p><strong>Tutorijal je uspesno zavrsen.</strong> Sada mozes da pokrenes punu rundu ili da ga ponovis.</p>' : ""}
+                            ${showTutorialComplete ? '<p><strong>TTutorial successfully accomplished.</strong> Now you can run real game or practice again.</p>' : ""}
                             <ul class="tutorial-list">
                                 <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                                 <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
@@ -1741,7 +1741,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                                 <li class="tutorial-item"><span class="tutorial-title">Leaderboard</span>Register with a unique nickname, then your finished rounds can be saved to the ranking table.</li>
                             </ul>
                             <div class="tutorial-actions">
-                                <button class="button secondary" type="button" data-action="startTutorial">Pokreni Tutorijal</button>
+                                <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
                                 <button class="button" type="button" data-action="startGame">Start Hunt</button>
                                 <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                             </div>
