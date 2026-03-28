@@ -2070,7 +2070,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                     updateHud();
                     setStatus("Missed shot. The chickens are getting away.");
                 } else {
-                    setStatus("Nema veze, probaj ponovo. Prati kruzno oznacenu kokosku.");
+                    setStatus("Missed shot. The chickens are getting away. Try again, shoot marked chicken");
                 }
             }
 
