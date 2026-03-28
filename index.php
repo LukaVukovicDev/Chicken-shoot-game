@@ -1196,6 +1196,41 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             return scoreValue / clicksValue;
         }
 
+        function classifyPlayerLevel(scoreValue, accuracyValue, pointsPerShotValue, hitsValue) {
+            if (hitsValue <= 0 || scoreValue < 20) {
+                return {
+                    level: "Pocetnik",
+                    summary: "Tek hvatas ritam igre i upoznajes tempo meta."
+                };
+            }
+
+            if (scoreValue >= 260 && accuracyValue >= 62 && pointsPerShotValue >= 7) {
+                return {
+                    level: "Elite Snajper",
+                    summary: "Vrhunska preciznost i odlican izbor meta tokom cele partije."
+                };
+            }
+
+            if (scoreValue >= 180 && accuracyValue >= 48 && pointsPerShotValue >= 5) {
+                return {
+                    level: "Napredni Lovac",
+                    summary: "Igras stabilno, precizno i vrlo efikasno skupljas poene."
+                };
+            }
+
+            if (scoreValue >= 90 && accuracyValue >= 32 && pointsPerShotValue >= 3) {
+                return {
+                    level: "Srednji Nivo",
+                    summary: "Imas dobru osnovu i vec kontrolises veci deo partije."
+                };
+            }
+
+            return {
+                level: "Pocetnik",
+                summary: "Dobar pocetak. Jos malo vezbe i preciznosti za visi rang."
+            };
+        }
+
         function formatMetric(value, digits = 1) {
             return Number(value || 0).toFixed(digits);
         }
@@ -1930,6 +1965,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
             const finalHits = hitCount;
             const finalAccuracy = calculateAccuracy(finalClicks, finalHits);
             const finalPointsPerShot = calculatePointsPerShot(finalScore, finalClicks);
+            const playerLevel = classifyPlayerLevel(finalScore, finalAccuracy, finalPointsPerShot, finalHits);
             gameRunning = false;
             gamePaused = false;
             clearTimeout(reloadTimeout);
@@ -1955,6 +1991,7 @@ $playerAnalytics = fetchPlayerAnalytics($db, $sessionUser);
                 <div class="overlay-card">
                     <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
                     <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
+                    <p><strong>Nivo igraca:</strong> ${playerLevel.level}<br>${playerLevel.summary}</p>
                     <ul class="stats-list" style="margin:18px 0;">
                         <li>Clicks: <strong>${finalClicks}</strong></li>
                         <li>Hits: <strong>${finalHits}</strong></li>
