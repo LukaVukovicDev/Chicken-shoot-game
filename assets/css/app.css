@@ -521,6 +521,13 @@ body.level-three .level-banner {
     background: rgba(7, 18, 14, 0.5);
 }
 
+.overlay.intro-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(6, 13, 12, 0.24);
+}
+
 .overlay.hidden { display: none; }
 
 .reload-overlay {
@@ -703,6 +710,213 @@ body.level-three .level-banner {
 .level-map-copy {
     margin: 0;
     font-size: 0.95rem;
+}
+
+.world-map-board {
+    position: relative;
+    min-height: 360px;
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(33, 18, 11, 0.18), rgba(8, 16, 21, 0.28)),
+        url("../images/game-map.png") center center / cover no-repeat;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        inset 0 28px 54px rgba(0, 0, 0, 0.16),
+        inset 0 -26px 58px rgba(0, 0, 0, 0.22),
+        0 24px 40px rgba(0, 0, 0, 0.24);
+}
+
+.intro-map-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.intro-map-shell .world-map-board {
+    position: absolute;
+    inset: 0;
+    min-height: 100%;
+    border-radius: 0;
+}
+
+.intro-panel {
+    position: absolute;
+    z-index: 2;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(7, 17, 19, 0.66);
+    border: 1px solid rgba(255, 247, 224, 0.12);
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(10px);
+}
+
+.intro-hero-panel {
+    top: 24px;
+    left: 24px;
+    width: min(430px, calc(100vw - 48px));
+}
+
+.intro-status-panel {
+    top: 24px;
+    right: 24px;
+    width: min(300px, calc(100vw - 48px));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.intro-info-panel {
+    left: 24px;
+    bottom: 110px;
+    width: min(460px, calc(100vw - 48px));
+}
+
+.intro-auth-panel {
+    top: 158px;
+    right: 24px;
+    width: min(390px, 34vw);
+    max-height: calc(100vh - 292px);
+    overflow: auto;
+}
+
+.intro-actions-panel {
+    left: 50%;
+    right: auto;
+    bottom: 24px;
+    width: min(860px, calc(100vw - 48px));
+    transform: translateX(-50%);
+}
+
+.intro-panel h1,
+.intro-panel h2,
+.intro-panel h3 {
+    margin-top: 0;
+}
+
+.intro-panel p {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.intro-status-panel .intro-stat {
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.intro-stat-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 241, 168, 0.82);
+}
+
+.intro-status-panel strong {
+    font-size: 0.98rem;
+}
+
+.world-map-board::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 48%, transparent 36%, rgba(7, 11, 14, 0.1) 100%),
+        linear-gradient(180deg, rgba(255, 236, 191, 0.04), rgba(7, 12, 14, 0.08));
+    pointer-events: none;
+}
+
+.map-pin {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #f9efcf;
+    cursor: pointer;
+    transform: translate(-50%, -100%);
+    transition: transform 0.2s ease, filter 0.2s ease;
+    text-align: center;
+    animation: pin-hover 2.4s ease-in-out infinite alternate;
+}
+
+.map-pin:hover {
+    transform: translate(-50%, calc(-100% - 4px));
+    filter: brightness(1.06);
+}
+
+.map-pin.activated {
+    animation: none;
+    transform: translate(-50%, calc(-100% - 8px)) scale(1.04);
+}
+
+.map-pin.selected .map-pin-medallion {
+    box-shadow:
+        0 0 0 3px rgba(255, 214, 122, 0.34),
+        0 0 26px rgba(246, 187, 91, 0.22),
+        0 14px 28px rgba(0, 0, 0, 0.36);
+}
+
+.map-pin-medallion {
+    position: relative;
+    width: 78px;
+    height: 78px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 34% 30%, #fff3d4 0%, #f3d094 20%, #c18a49 42%, #5a3721 70%, #1a120d 100%);
+    box-shadow:
+        0 0 0 3px rgba(28, 17, 11, 0.7),
+        0 12px 24px rgba(0, 0, 0, 0.34);
+    animation: pin-glow 2.2s ease-in-out infinite;
+}
+
+.map-pin-medallion::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -18px;
+    width: 28px;
+    height: 24px;
+    background:
+        linear-gradient(180deg, #4a2b1a 0%, #24150d 100%);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    transform: translateX(-50%);
+    filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.24));
+}
+
+.map-pin-number {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff2cf;
+    text-shadow: 0 2px 8px rgba(56, 28, 12, 0.72);
+}
+
+.map-pin-name {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(18, 13, 10, 0.78);
+    border: 1px solid rgba(255, 228, 176, 0.14);
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.map-pin-region {
+    font-size: 0.72rem;
+    color: rgba(255, 242, 209, 0.9);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.78);
 }
 
 .level-route {
@@ -1068,6 +1282,23 @@ body.level-three .level-banner {
     animation: badge-glint 1.9s ease-in-out infinite;
     transform-origin: 84px 31px;
 }
+.chicken.tropical-chicken .chicken-sprite {
+    animation: tropical-hover 1.15s ease-in-out infinite alternate;
+}
+.chicken.tropical-chicken .tropical-reference-sprite {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.chicken.tropical-chicken .tropical-reference-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 8px 10px rgba(17, 74, 92, 0.12));
+    pointer-events: none;
+}
 .chicken.tropical-chicken .tropical-tail {
     fill: rgba(118, 145, 161, 0.28);
 }
@@ -1201,6 +1432,23 @@ body.level-three .level-banner {
     0% { opacity: 0; transform: translate3d(-50%, -26px, 0) scale(0.96); }
     100% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
 }
+@keyframes pin-hover {
+    0% { transform: translate(-50%, -100%) translateY(0); }
+    100% { transform: translate(-50%, -100%) translateY(-5px); }
+}
+@keyframes pin-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 0 3px rgba(28, 17, 11, 0.7),
+            0 12px 24px rgba(0, 0, 0, 0.34);
+    }
+    50% {
+        box-shadow:
+            0 0 0 3px rgba(28, 17, 11, 0.7),
+            0 0 22px rgba(247, 206, 124, 0.28),
+            0 12px 24px rgba(0, 0, 0, 0.34);
+    }
+}
 @keyframes hat-bob {
     0% { transform: rotate(-4deg) translateY(1px); }
     100% { transform: rotate(3deg) translateY(-2px); }
@@ -1212,6 +1460,10 @@ body.level-three .level-banner {
 @keyframes badge-glint {
     0%, 100% { transform: scale(1); opacity: 0.92; }
     55% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes tropical-hover {
+    0% { transform: rotate(-1.6deg) translateY(1px) scale(0.995); }
+    100% { transform: rotate(1.2deg) translateY(-2px) scale(1.005); }
 }
 @keyframes palm-sway {
     0% { transform: rotate(-3deg); }
@@ -1249,6 +1501,43 @@ body.level-three .level-banner {
     .overlay-grid, .auth-grid { grid-template-columns: 1fr; }
     .analytics-grid { grid-template-columns: 1fr; }
     .overlay-card { padding: 22px; }
+    .intro-hero-panel,
+    .intro-status-panel,
+    .intro-info-panel,
+    .intro-auth-panel,
+    .intro-actions-panel {
+        width: calc(100vw - 32px);
+    }
+    .intro-hero-panel {
+        top: 16px;
+        left: 16px;
+    }
+    .intro-status-panel {
+        top: 176px;
+        left: 16px;
+        right: auto;
+    }
+    .intro-auth-panel {
+        top: 318px;
+        right: 16px;
+        width: min(380px, calc(100vw - 32px));
+        max-height: calc(100vh - 470px);
+    }
+    .intro-info-panel {
+        left: 16px;
+        bottom: 104px;
+        width: min(420px, calc(100vw - 32px));
+    }
+    .intro-actions-panel {
+        bottom: 16px;
+    }
+    .world-map-board {
+        min-height: 320px;
+    }
+    .map-pin-medallion {
+        width: 72px;
+        height: 72px;
+    }
     .level-route {
         grid-template-columns: 1fr;
     }
@@ -1306,6 +1595,40 @@ body.level-three .level-banner {
     .overlay {
         align-items: flex-start;
         padding: 10px;
+    }
+    .overlay.intro-overlay {
+        padding: 0;
+        align-items: stretch;
+    }
+    .intro-map-shell {
+        overflow: auto;
+    }
+    .intro-map-shell .world-map-board {
+        position: relative;
+        min-height: 44vh;
+        height: 44vh;
+    }
+    .intro-panel {
+        position: relative;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        left: auto;
+        width: calc(100vw - 20px);
+        margin: 10px;
+        transform: none;
+        border-radius: 18px;
+    }
+    .intro-status-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .intro-auth-panel {
+        max-height: none;
+        overflow: visible;
+    }
+    .intro-actions-panel {
+        width: calc(100vw - 20px);
+        margin-bottom: 14px;
     }
     .reload-overlay {
         align-items: center;
@@ -1384,6 +1707,29 @@ body.level-three .level-banner {
     .level-map {
         padding: 14px;
         border-radius: 18px;
+    }
+    .world-map-board {
+        min-height: 250px;
+        border-radius: 18px;
+    }
+    .map-pin-medallion {
+        width: 58px;
+        height: 58px;
+    }
+    .map-pin-medallion::after {
+        bottom: -14px;
+        width: 20px;
+        height: 18px;
+    }
+    .map-pin-number {
+        font-size: 1.22rem;
+    }
+    .map-pin-name {
+        padding: 4px 8px;
+        font-size: 0.72rem;
+    }
+    .map-pin-region {
+        font-size: 0.62rem;
     }
     .level-node {
         padding: 16px 12px 12px;

@@ -115,6 +115,11 @@ const levelConfigs = {
         accessory: "lei"
     }
 };
+const levelMapPins = {
+    1: { region: "Vojvodina, Serbia", top: "34%", left: "52.5%" },
+    2: { region: "Russia", top: "24%", left: "72.5%" },
+    3: { region: "Hawaii", top: "57%", left: "12.5%" }
+};
 const viewport = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -149,6 +154,7 @@ let currentLevel = 1;
 let maxUnlockedLevel = 1;
 let selectedStartLevel = 1;
 let levelTransitionTimeout = null;
+let levelPinLaunchTimeout = null;
 
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
@@ -273,14 +279,76 @@ function unlockLevel(level) {
 }
 
 function selectStartLevel(level, options = {}) {
-    const { render = true } = options;
-    const nextLevel = Math.min(maxUnlockedLevel, Math.max(1, level));
+    const { render = true, force = false } = options;
+    const levelCap = force ? maxLevel : maxUnlockedLevel;
+    const nextLevel = Math.min(levelCap, Math.max(1, level));
     selectedStartLevel = nextLevel;
     currentLevel = nextLevel;
     applyLevelTheme();
     if (render) {
         showIntroOverlay();
     }
+}
+
+function normalizeLevelNumber(level) {
+    return Math.min(maxLevel, Math.max(1, Number(level) || 1));
+}
+
+function startLevelFromPin(level) {
+    startGame(normalizeLevelNumber(level));
+}
+
+function setOverlayMode(mode = "default") {
+    overlay.classList.toggle("intro-overlay", mode === "intro");
+}
+
+function playMapPinSound(level) {
+    if (!window.AudioContext && !window.webkitAudioContext) {
+        return;
+    }
+
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = playMapPinSound.ctx || new AudioCtx();
+        playMapPinSound.ctx = ctx;
+
+        if (ctx.state === "suspended") {
+            ctx.resume().catch(() => {});
+        }
+
+        const now = ctx.currentTime;
+        const baseFrequency = 320 + (normalizeLevelNumber(level) * 90);
+        const notes = [baseFrequency, baseFrequency * 1.25];
+
+        notes.forEach((frequency, index) => {
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.type = index === 0 ? "triangle" : "sine";
+            oscillator.frequency.setValueAtTime(frequency, now);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(index === 0 ? 0.055 : 0.03, now + 0.02 + (index * 0.015));
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22 + (index * 0.04));
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start(now + (index * 0.018));
+            oscillator.stop(now + 0.28 + (index * 0.05));
+        });
+    } catch (error) {
+        // Ignore audio failures and continue launching the selected level.
+    }
+}
+
+function activateMapPin(button) {
+    const level = normalizeLevelNumber(button.dataset.level);
+    clearTimeout(levelPinLaunchTimeout);
+    overlay.querySelectorAll(".map-pin.activated").forEach((pin) => pin.classList.remove("activated"));
+    button.classList.add("activated");
+    playMapPinSound(level);
+    levelPinLaunchTimeout = setTimeout(() => {
+        button.classList.remove("activated");
+        startLevelFromPin(level);
+        levelPinLaunchTimeout = null;
+    }, 220);
 }
 
 function applyLevelTheme() {
@@ -823,35 +891,29 @@ async function loadLeaderboard() {
 
 function buildLevelMapMarkup() {
     return `
-        <section class="level-map" aria-label="Level selection map">
-            <div class="level-map-header">
-                <span class="tutorial-banner-title">Level Map</span>
-                <p class="level-map-copy">Click any unlocked route to jump in, or use the button below for the currently selected start: <strong>${escapeHtml(getLevelConfig(selectedStartLevel).mapTitle)}</strong>.</p>
-            </div>
-            <div class="level-route" role="list">
-                ${Object.values(levelConfigs).map((config) => {
-        const unlocked = config.id <= maxUnlockedLevel;
+        <div class="world-map-board" role="group" aria-label="World map with level pins">
+            ${Object.values(levelConfigs).slice(0, 3).map((config) => {
+        const pin = levelMapPins[config.id];
         const selected = config.id === selectedStartLevel;
+
         return `
                         <button
-                            class="level-node ${selected ? "selected" : ""} ${unlocked ? "unlocked" : "locked"}"
+                            class="map-pin ${selected ? "selected" : ""}"
                             type="button"
                             data-action="startLevel"
                             data-level="${config.id}"
-                            ${unlocked ? "" : "disabled"}
-                            aria-pressed="${selected ? "true" : "false"}"
-                            aria-label="${escapeHtml(config.name)}${unlocked ? "" : " locked"}"
-                            role="listitem"
+                            style="top: ${pin.top}; left: ${pin.left};"
+                            aria-label="Load ${escapeHtml(config.name)} in ${escapeHtml(pin.region)}"
                         >
-                            <span class="level-node-ring"></span>
-                            <span class="level-node-number">${config.id}</span>
-                            <span class="level-node-title">${escapeHtml(config.mapTitle)}</span>
-                            <span class="level-node-copy">${escapeHtml(unlocked ? config.mapCopy : config.lockedCopy)}</span>
+                            <span class="map-pin-medallion">
+                                <span class="map-pin-number">${config.id}</span>
+                            </span>
+                            <span class="map-pin-name">${escapeHtml(config.mapTitle)}</span>
+                            <span class="map-pin-region">${escapeHtml(pin.region)}</span>
                         </button>
                     `;
     }).join("")}
-            </div>
-        </section>
+        </div>
     `;
 }
 
@@ -859,29 +921,51 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
     const selectedConfig = getLevelConfig(selectedStartLevel);
 
     return `
-        <div class="overlay-card">
-            <div class="overlay-grid">
-                <div class="card-section">
-                    <h1>Chicken Shooting</h1>
-                    <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
-                    <p>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</p>
-                    ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can run real game or practice again.</p>' : ""}
-                    ${buildLevelMapMarkup()}
-                    <ul class="tutorial-list">
-                        <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Leaderboard</span>Register with a unique nickname, then your finished rounds can be saved to the ranking table.</li>
-                    </ul>
-                    <div class="tutorial-actions">
-                        <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
-                        <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
-                        <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
-                    </div>
+        <div class="intro-map-shell">
+            ${buildLevelMapMarkup()}
+            <div class="intro-panel intro-hero-panel">
+                <span class="tutorial-banner-title">Global Hunt Map</span>
+                <h1>Chicken Shooting</h1>
+                <p>Whole screen start map is live. Click a numbered pin and that exact level loads immediately.</p>
+                <p>Pin <strong>1</strong> sits over Vojvodina, pin <strong>2</strong> over Russia, and pin <strong>3</strong> over Hawaii.</p>
+                ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
+            </div>
+            <div class="intro-panel intro-status-panel">
+                <div class="intro-stat">
+                    <span class="intro-stat-label">Selected Route</span>
+                    <strong>${escapeHtml(selectedConfig.mapTitle)}</strong>
                 </div>
-                <div>
-                    ${getAuthMarkup()}
-                    <div id="authFeedback" class="feedback"></div>
+                <div class="intro-stat">
+                    <span class="intro-stat-label">Best Local Score</span>
+                    <strong>${bestScore}</strong>
+                </div>
+                <div class="intro-stat">
+                    <span class="intro-stat-label">Unlocked Routes</span>
+                    <strong>${maxUnlockedLevel} / ${maxLevel}</strong>
+                </div>
+                <div class="intro-stat">
+                    <span class="intro-stat-label">Launch</span>
+                    <strong>Click any pin</strong>
+                </div>
+            </div>
+            <div class="intro-panel intro-info-panel">
+                <ul class="tutorial-list">
+                    <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
+                    <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
+                    <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
+                    <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</li>
+                </ul>
+            </div>
+            <div class="intro-panel intro-auth-panel">
+                <span class="tutorial-banner-title">Account</span>
+                ${getAuthMarkup()}
+                <div id="authFeedback" class="feedback"></div>
+            </div>
+            <div class="intro-panel intro-actions-panel">
+                <div class="tutorial-actions">
+                    <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
+                    <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
+                    <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                 </div>
             </div>
         </div>
@@ -893,12 +977,14 @@ function showIntroOverlay(showTutorialComplete = false) {
         currentLevel = selectedStartLevel;
         applyLevelTheme();
     }
+    setOverlayMode("intro");
     overlay.innerHTML = getIntroOverlayMarkup(showTutorialComplete);
     overlay.classList.remove("hidden");
     attachOverlayHandlers();
 }
 
 function showLeaderboardOverlay() {
+    setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
             <h2>Leaderboard</h2>
@@ -922,6 +1008,7 @@ function openPauseMenu() {
     }
 
     pauseGame();
+    setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
             <h2>Game Menu</h2>
@@ -994,17 +1081,13 @@ function attachOverlayHandlers() {
 
     openLeaderboardButton?.addEventListener("click", showLeaderboardOverlay);
     resumeButton?.addEventListener("click", resumeGameFromPause);
-    startButtons.forEach((button) => button.addEventListener("click", startGame));
+    startButtons.forEach((button) => button.addEventListener("click", () => startGame()));
     tutorialButtons.forEach((button) => button.addEventListener("click", startTutorialGame));
     restartButtons.forEach((button) => button.addEventListener("click", restartGame));
     endButtons.forEach((button) => button.addEventListener("click", () => endGame(true)));
     menuButtons.forEach((button) => button.addEventListener("click", openPauseMenu));
     introButtons.forEach((button) => button.addEventListener("click", showIntroOverlay));
-    levelButtons.forEach((button) => button.addEventListener("click", () => {
-        const level = Number(button.dataset.level || 1);
-        selectStartLevel(level, { render: false });
-        startGame();
-    }));
+    levelButtons.forEach((button) => button.addEventListener("click", () => activateMapPin(button)));
 
     if (logoutButton) {
         logoutButton.addEventListener("click", async () => {
@@ -1043,59 +1126,10 @@ function resumeGameFromPause() {
     rafId = requestAnimationFrame(animateChickens);
 }
 
-function leiBloomMarkup(className, x, y, scale, rotation, colors) {
-    const [petalOne, petalTwo, petalThree, petalFour, petalFive, center = "#ffe1f1"] = colors;
-
-    return `
-        <g class="lei-bloom ${className}" transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})">
-            <ellipse class="lei-petal" cx="0" cy="-4.9" rx="2.6" ry="5.8" fill="${petalOne}"></ellipse>
-            <ellipse class="lei-petal" cx="4.6" cy="-1.4" rx="2.5" ry="5.4" fill="${petalTwo}" transform="rotate(58 4.6 -1.4)"></ellipse>
-            <ellipse class="lei-petal" cx="3.1" cy="4.2" rx="2.4" ry="5.1" fill="${petalThree}" transform="rotate(126 3.1 4.2)"></ellipse>
-            <ellipse class="lei-petal" cx="-3.1" cy="4.1" rx="2.5" ry="5.2" fill="${petalFour}" transform="rotate(-128 -3.1 4.1)"></ellipse>
-            <ellipse class="lei-petal" cx="-4.7" cy="-1.5" rx="2.5" ry="5.4" fill="${petalFive}" transform="rotate(-58 -4.7 -1.5)"></ellipse>
-            <circle class="lei-center" cx="0" cy="0" r="1.8" fill="${center}"></circle>
-        </g>
-    `;
-}
-
 function tropicalChickenMarkup() {
-    const tropicalLei = `
-                <g class="lei">
-                    <path class="lei-rope" d="M56 51 C52 69, 67 88, 81 88 C93 88, 101 76, 96 63" fill="none" stroke="#ffd8e9" stroke-width="4.2" stroke-linecap="round"></path>
-                    ${[
-                        leiBloomMarkup("bloom-one", 56, 51, 0.82, -12, ["#ff5da7", "#ff85be", "#ff4596", "#ff92c5", "#ff6caf"]),
-                        leiBloomMarkup("bloom-two", 59, 57, 0.88, -8, ["#ff68ae", "#ff94c7", "#ff539e", "#ff9ed0", "#ff75b6"]),
-                        leiBloomMarkup("bloom-three", 61, 63, 0.92, -5, ["#ff5aa5", "#ff8fc3", "#ff4797", "#ff9acf", "#ff6aac"]),
-                        leiBloomMarkup("bloom-four", 64, 69, 0.96, -2, ["#ff73b4", "#ffabd5", "#ff61aa", "#ffa1d1", "#ff82bc"]),
-                        leiBloomMarkup("bloom-five", 68, 75, 1, 1, ["#ff61aa", "#ff8ec4", "#ff4e9a", "#ff9cce", "#ff73b5"]),
-                        leiBloomMarkup("bloom-six", 73, 80, 1.04, 3, ["#ff6db0", "#ff9ecf", "#ff57a3", "#ff8fc3", "#ff7ebb"]),
-                        leiBloomMarkup("bloom-seven", 79, 84, 1, 4, ["#ff62ab", "#ff8dc4", "#ff4d99", "#ff97ca", "#ff71b2"]),
-                        leiBloomMarkup("bloom-eight", 85, 83, 0.98, 3, ["#ff5ea8", "#ff88c1", "#ff4b98", "#ff95c8", "#ff6cad"]),
-                        leiBloomMarkup("bloom-nine", 90, 79, 0.94, 0, ["#ff69ae", "#ff97c9", "#ff53a0", "#ff9fd0", "#ff76b7"]),
-                        leiBloomMarkup("bloom-ten", 93, 72, 0.88, -4, ["#ff61aa", "#ff8dc4", "#ff4d9a", "#ff95c8", "#ff71b3"]),
-                        leiBloomMarkup("bloom-eleven", 94, 65, 0.84, -8, ["#ff73b5", "#ffa8d4", "#ff61aa", "#ff9fd0", "#ff86bf"])
-                    ].join("")}
-                </g>
-    `;
-
     return `
-        <span class="chicken-sprite">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-                <ellipse class="tropical-tail" cx="31" cy="65" rx="23" ry="19"></ellipse>
-                <ellipse class="tropical-body" cx="61" cy="73" rx="36" ry="26"></ellipse>
-                <ellipse class="tropical-head" cx="87" cy="50" rx="23" ry="19"></ellipse>
-                <ellipse class="tropical-neck-shadow" cx="73" cy="60" rx="16" ry="12"></ellipse>
-                <ellipse class="tropical-wing" cx="42" cy="70" rx="21" ry="18"></ellipse>
-                ${tropicalLei}
-                <path class="tropical-comb" d="M71 25 C78 10, 96 10, 105 27"></path>
-                <circle class="tropical-eye-white" cx="98" cy="46" r="8.2"></circle>
-                <circle class="tropical-eye-pupil" cx="99" cy="46" r="4.8"></circle>
-                <polygon class="tropical-beak" points="108,55 121,61 108,67"></polygon>
-                <path class="tropical-leg" d="M50 92 L46 114"></path>
-                <path class="tropical-leg" d="M64 91 L60 114"></path>
-                <path class="tropical-foot" d="M46 114 L39 123 M46 114 L51 122 M46 114 L56 123"></path>
-                <path class="tropical-foot" d="M60 114 L53 123 M60 114 L65 122 M60 114 L70 123"></path>
-            </svg>
+        <span class="chicken-sprite tropical-reference-sprite">
+            <img class="tropical-reference-image" src="assets/images/chicken-hawai-cutout.png" alt="" aria-hidden="true">
         </span>
     `;
 }
@@ -1407,6 +1441,7 @@ async function endGame(endedEarly = false) {
         return;
     }
 
+    setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
             <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
@@ -1455,15 +1490,17 @@ function resetRoundState() {
     applyLevelTheme();
 }
 
-function startGame() {
+function startGame(levelOverride = null) {
+    const startingLevel = levelOverride === null ? selectedStartLevel : normalizeLevelNumber(levelOverride);
     tutorialMode = false;
     tutorialStep = 0;
+    selectedStartLevel = startingLevel;
     setTutorialMessage("");
     overlay.classList.add("hidden");
     resetRoundState();
     gameRunning = true;
     updateViewport();
-    activateLevel(selectedStartLevel, { showBanner: selectedStartLevel > 1 });
+    activateLevel(startingLevel, { showBanner: startingLevel > 1 });
     rafId = requestAnimationFrame(animateChickens);
 }
 
