@@ -6,7 +6,7 @@ $initialAppState = [
     'user' => $sessionUser,
     'leaderboard' => $leaderboard,
     'analytics' => $playerAnalytics,
-    'dbError' => $dbError,
+    'dbError' => $dbError === null ? null : 'Database is temporarily unavailable.',
 ];
 ?>
 <!DOCTYPE html>
@@ -17,7 +17,7 @@ $initialAppState = [
     <title>Chicken Shooting</title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
-<body>
+<body data-app-state="<?= escapeHtml(encodeJson($initialAppState)) ?>" data-csrf-token="<?= escapeHtml(getCsrfToken()) ?>">
     <div class="game-shell">
         <div class="hud">
             <div class="panel"><span class="panel-label">Score</span><span class="panel-value" id="score">0</span></div>
@@ -50,9 +50,7 @@ $initialAppState = [
         <?php if ($dbError): ?>
             <div class="db-warning">Database error detected. Login, register and leaderboard are disabled until SQLite works again.</div>
         <?php endif; ?>
-    </div>    <script>
-        window.APP_STATE = <?= encodeJson($initialAppState) ?>;
-    </script>
+    </div>
     <script src="assets/js/app.js"></script>
 </body>
 </html>

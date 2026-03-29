@@ -1,10 +1,19 @@
-﻿const appState = window.APP_STATE || {
+﻿function parseAppState() {
+    try {
+        return JSON.parse(document.body.dataset.appState || "{}");
+    } catch (error) {
+        return {};
+    }
+}
+
+const appState = Object.assign({
     dbAvailable: false,
     user: null,
     leaderboard: [],
     analytics: null,
     dbError: null
-};
+}, parseAppState());
+let csrfToken = document.body.dataset.csrfToken || "";
 
 const gameArea = document.getElementById("gameArea");
 const hud = document.querySelector(".hud");
@@ -148,6 +157,15 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+function syncSecurityState(response) {
+    if (!response || typeof response.csrfToken !== "string" || !response.csrfToken) {
+        return;
+    }
+
+    csrfToken = response.csrfToken;
+    document.body.dataset.csrfToken = csrfToken;
 }
 
 function updateViewport() {
@@ -440,10 +458,19 @@ function buildProgressChartMarkup() {
                 ${history.map((round, index) => {
                     const scoreValue = Number(round.score) || 0;
                     const barHeight = Math.max(8, Math.round((scoreValue / maxScore) * 120));
+                    const gradientId = `chartGradient-${index}`;
                     return `
                         <div class="chart-bar-wrap" title="Round ${index + 1}: ${scoreValue} pts, ${round.accuracy}% accuracy">
                             <span class="chart-value">${scoreValue}</span>
-                            <div class="chart-bar" style="height:${barHeight}px"></div>
+                            <svg class="chart-svg" viewBox="0 0 32 120" aria-hidden="true" focusable="false">
+                                <defs>
+                                    <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#ffe388"></stop>
+                                        <stop offset="100%" stop-color="#ffcb45"></stop>
+                                    </linearGradient>
+                                </defs>
+                                <rect x="0" y="${120 - barHeight}" width="32" height="${barHeight}" rx="8" fill="url(#${gradientId})"></rect>
+                            </svg>
                             <span class="chart-label">R${index + 1}</span>
                         </div>
                     `;
@@ -535,8 +562,20 @@ async function postAction(action, formData) {
         return { ok: false, message: "Database is not available." };
     }
     try {
-        const response = await fetch(`?action=${encodeURIComponent(action)}`, { method: "POST", body: formData });
-        return await response.json();
+        const response = await fetch(`?action=${encodeURIComponent(action)}`, {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRF-Token": csrfToken
+            }
+        });
+        const data = await response.json();
+        syncSecurityState(data);
+        return data;
     } catch (error) {
         return { ok: false, message: "Request failed. Please try again." };
     }
@@ -547,8 +586,16 @@ async function loadLeaderboard() {
         return;
     }
     try {
-        const response = await fetch("?action=leaderboard");
+        const response = await fetch("?action=leaderboard", {
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
         const data = await response.json();
+        syncSecurityState(data);
         if (data.ok) {
             appState.leaderboard = data.leaderboard || [];
             appState.user = data.user || appState.user;
@@ -602,7 +649,7 @@ function showLeaderboardOverlay() {
             <p>Best score for each registered nickname.</p>
             ${buildLeaderboardMarkup()}
             ${buildAnalyticsMarkup()}
-            <div class="button-row" style="margin-top:18px;">
+            <div class="button-row button-row-spaced">
                 <button class="button secondary" type="button" data-action="showIntro">Back</button>
                 ${gameRunning || gamePaused ? '<button class="button" type="button" data-action="openPauseMenu">Game Menu</button>' : '<button class="button" type="button" data-action="startGame">Start Hunt</button>'}
             </div>
@@ -632,7 +679,7 @@ function openPauseMenu() {
                 <li>Points per shot: <strong>${formatMetric(calculatePointsPerShot(score, clickCount), 2)}</strong></li>
                 <li>Logged in as: <strong>${escapeHtml(appState.user?.nickname || "Guest")}</strong></li>
             </ul>
-            <div class="button-row" style="margin-top:18px;">
+            <div class="button-row button-row-spaced">
                 <button class="button" type="button" data-action="resumeGame">Resume</button>
                 <button class="button" type="button" data-action="restartGame">Restart</button>
                 <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
@@ -1013,7 +1060,7 @@ async function endGame(endedEarly = false) {
             <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
             <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
             <p><strong>Nivo igraca:</strong> ${playerLevel.level}<br>${playerLevel.summary}</p>
-            <ul class="stats-list" style="margin:18px 0;">
+            <ul class="stats-list round-summary">
                 <li>Clicks: <strong>${finalClicks}</strong></li>
                 <li>Hits: <strong>${finalHits}</strong></li>
                 <li>Accuracy: <strong>${formatMetric(finalAccuracy, 1)}%</strong></li>
@@ -1165,3 +1212,5 @@ queueCrosshairRender();
 updateHud();
 showIntroOverlay();
 loadLeaderboard();
+
+

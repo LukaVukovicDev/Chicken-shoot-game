@@ -1,10 +1,6 @@
 <?php
 declare(strict_types=1);
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-
-header('X-Frame-Options: SAMEORIGIN');
+bootstrapSecurity();
 
 

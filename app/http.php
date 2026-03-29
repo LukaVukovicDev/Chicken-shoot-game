@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const APP_JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+const APP_JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE;
 
 function jsonResponse(array $payload, int $status = 200): never
 {

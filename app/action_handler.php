@@ -9,8 +9,21 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
 
     $action = (string) $_GET['action'];
 
+    ensureAjaxRequest();
+
+    if ($action !== 'leaderboard') {
+        ensurePostRequest();
+        validateSameOriginRequest();
+        requireValidCsrfToken();
+    }
+
     if ($dbError !== null) {
-        jsonResponse(['ok' => false, 'message' => 'Database error: ' . $dbError], 500);
+        logSecurityEvent('request_rejected_database_unavailable', [
+            'action' => $action,
+            'ip' => getClientIpAddress(),
+            'database_error' => $dbError,
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Service is temporarily unavailable.'], 503);
     }
 
     $database = requireDatabase($db);
@@ -19,8 +32,6 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         $user = getSessionUser($database);
         jsonResponse(buildAppPayload($database, $user));
     }
-
-    ensurePostRequest();
 
     switch ($action) {
         case 'register':
@@ -63,6 +74,7 @@ function buildAppPayload(PDO $db, ?array $user): array
         'user' => $user,
         'leaderboard' => fetchLeaderboard($db),
         'analytics' => fetchPlayerAnalytics($db, $user),
+        'csrfToken' => getCsrfToken(),
     ];
 }
 
@@ -128,7 +140,13 @@ function handleRegisterAction(PDO $db): never
         ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
     ]);
 
+    rotateSessionSecurity();
     $_SESSION['user_id'] = (int) $db->lastInsertId();
+    logSecurityEvent('user_registered', [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $username,
+        'ip' => getClientIpAddress(),
+    ]);
     $response = buildAppPayload($db, getSessionUser($db));
     $response['message'] = 'Registration successful.';
 
@@ -144,15 +162,25 @@ function handleLoginAction(PDO $db): never
         jsonResponse(['ok' => false, 'message' => 'Username and password are required.'], 422);
     }
 
+    ensureLoginAllowed($db, $username);
+
     $statement = $db->prepare('SELECT id, username, nickname, password_hash FROM users WHERE username = :username');
     $statement->execute([':username' => $username]);
     $user = $statement->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
+        recordFailedLoginAttempt($db, $username);
         jsonResponse(['ok' => false, 'message' => 'Wrong username or password.'], 401);
     }
 
+    clearFailedLoginAttempts($db, $username);
+    rotateSessionSecurity();
     $_SESSION['user_id'] = (int) $user['id'];
+    logSecurityEvent('user_login', [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $username,
+        'ip' => getClientIpAddress(),
+    ]);
     $publicUser = publicUserData($user);
     $response = buildAppPayload($db, $publicUser);
     $response['message'] = 'Login successful.';
@@ -162,7 +190,12 @@ function handleLoginAction(PDO $db): never
 
 function handleLogoutAction(PDO $db): never
 {
-    unset($_SESSION['user_id']);
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+    resetSessionToGuest();
+    logSecurityEvent('user_logout', [
+        'user_id' => $userId,
+        'ip' => getClientIpAddress(),
+    ]);
 
     $response = buildAppPayload($db, null);
     $response['message'] = 'Logged out.';
@@ -174,6 +207,9 @@ function handleSaveScoreAction(PDO $db): never
 {
     $user = getSessionUser($db);
     if (!$user) {
+        logSecurityEvent('unauthorized_score_submission', [
+            'ip' => getClientIpAddress(),
+        ]);
         jsonResponse(['ok' => false, 'message' => 'Log in first to save your score.'], 401);
     }
 
