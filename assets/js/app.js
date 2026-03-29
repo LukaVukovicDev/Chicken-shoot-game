@@ -30,6 +30,7 @@ const reloadOverlay = document.getElementById("reloadOverlay");
 const statusText = document.getElementById("statusText");
 const tutorialBanner = document.getElementById("tutorialBanner");
 const tutorialText = document.getElementById("tutorialText");
+const levelBanner = document.getElementById("levelBanner");
 const crosshair = document.getElementById("crosshair");
 const menuControl = document.getElementById("menuControl");
 const restartControl = document.getElementById("restartControl");
@@ -39,6 +40,10 @@ const totalTime = 45;
 const magSize = 6;
 const spawnLimit = 8;
 const spawnEveryMs = 900;
+const levelTwoScoreThreshold = 1000;
+const levelTwoSpawnLimit = 10;
+const levelTwoSpawnEveryMs = 760;
+const levelTwoSpeedMultiplier = 1.18;
 const reloadSequenceLength = 4;
 const reloadDirections = ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"];
 const reloadSymbols = {
@@ -84,6 +89,8 @@ let crosshairQueued = false;
 let tutorialMode = false;
 let tutorialStep = 0;
 let tutorialTargetId = null;
+let currentLevel = 1;
+let levelTransitionTimeout = null;
 
        const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
@@ -166,6 +173,65 @@ function syncSecurityState(response) {
 
     csrfToken = response.csrfToken;
     document.body.dataset.csrfToken = csrfToken;
+}
+
+function applyLevelTheme() {
+    document.body.classList.toggle("level-two", currentLevel === 2);
+}
+
+function getActiveSpawnLimit() {
+    return currentLevel === 2 ? levelTwoSpawnLimit : spawnLimit;
+}
+
+function getActiveSpawnEveryMs() {
+    return currentLevel === 2 ? levelTwoSpawnEveryMs : spawnEveryMs;
+}
+
+function hideLevelBanner() {
+    clearTimeout(levelTransitionTimeout);
+    levelTransitionTimeout = null;
+    levelBanner.classList.remove("show");
+    levelBanner.classList.add("hidden");
+}
+
+function showLevelBanner(title, message) {
+    clearTimeout(levelTransitionTimeout);
+    levelBanner.innerHTML = `
+        <span class="tutorial-banner-title">${escapeHtml(title)}</span>
+        <p class="tutorial-banner-copy">${escapeHtml(message)}</p>
+    `;
+    levelBanner.classList.remove("hidden");
+    requestAnimationFrame(() => levelBanner.classList.add("show"));
+    levelTransitionTimeout = setTimeout(() => {
+        levelBanner.classList.remove("show");
+        levelBanner.classList.add("hidden");
+        levelTransitionTimeout = null;
+    }, 2600);
+}
+
+function clearAllChickens() {
+    chickens.forEach((chicken) => chicken.el.remove());
+    chickens.clear();
+    clearTutorialTarget();
+}
+
+function activateLevelTwo() {
+    currentLevel = 2;
+    timeLeft = totalTime;
+    ammo = magSize;
+    spawnAccumulator = 0;
+    secondAccumulator = 0;
+    lastFrameTime = 0;
+    cancelReloadChallenge();
+    clearAllChickens();
+    applyLevelTheme();
+    updateHud();
+    showLevelBanner("Level 2", "Ulazis u ruski planinski teren. Tajmer je vracen na 45 sekundi, a kokoske sada nose zimske kape.");
+    setStatus("Level 2 started. Snowy ridge unlocked and the chickens are moving faster.");
+
+    for (let i = 0; i < 5; i += 1) {
+        spawnChicken();
+    }
 }
 
 function updateViewport() {
@@ -614,6 +680,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                 <div class="card-section">
                     <h1>Chicken Shooting</h1>
                     <p>Hunt runaway chickens for 45 seconds. Fast birds give more points, missed shots cost points, and your magazine reloads automatically.</p>
+                    <p>Push past 1000 points and you unlock a second snowy level inspired by the mountains of Russia, with a fresh 45-second timer.</p>
                     ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can run real game or practice again.</p>' : ""}
                     <ul class="tutorial-list">
                         <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
@@ -781,9 +848,23 @@ function resumeGameFromPause() {
 }
 
 function chickenMarkup(bodyColor, wingColor, beakColor) {
+    const winterHat = currentLevel === 2 ? `
+                <g class="winter-hat">
+                    <path class="winter-hat-top" d="M60 16 C70 10, 92 11, 102 20 C104 30, 101 40, 90 45 L67 45 C58 40, 56 27, 60 16 Z" fill="#101010"></path>
+                    <path class="winter-hat-top" d="M60 16 C70 10, 92 11, 102 20 C104 30, 101 40, 90 45 L67 45 C58 40, 56 27, 60 16 Z" fill="#3b3b3b" opacity="0.24"></path>
+                    <rect class="winter-hat-top" x="61" y="34" width="40" height="14" rx="7" fill="#1d1d1d"></rect>
+                    <path class="winter-hat-flap-left" d="M63 38 C51 42, 48 54, 50 67 C53 78, 60 88, 67 94 C66 79, 69 60, 73 44 Z" fill="#0d0d0d"></path>
+                    <path class="winter-hat-flap-right" d="M97 38 C107 43, 111 55, 109 68 C106 78, 100 88, 94 94 C95 78, 92 60, 88 44 Z" fill="#0d0d0d"></path>
+                    <circle class="winter-hat-badge" cx="81" cy="31" r="7.2" fill="#cf3030"></circle>
+                    <path class="winter-hat-badge" d="M81 22 L83 28 L89 28 L84 32 L86 38 L81 34 L76 38 L78 32 L73 28 L79 28 Z" fill="#f0d25c"></path>
+                    <circle class="winter-hat-badge" cx="81" cy="31" r="9.2" fill="none" stroke="#f0d25c" stroke-width="2"></circle>
+                </g>
+            ` : "";
+
     return `
         <span class="chicken-sprite">
             <svg viewBox="0 0 120 120" aria-hidden="true">
+                ${winterHat}
                 <ellipse cx="62" cy="68" rx="30" ry="22" fill="${bodyColor}"></ellipse>
                 <ellipse cx="88" cy="52" rx="18" ry="15" fill="${bodyColor}"></ellipse>
                 <ellipse cx="40" cy="64" rx="16" ry="13" fill="${wingColor}" opacity="0.95"></ellipse>
@@ -824,7 +905,7 @@ function getRandomChickenType() {
 }
 
 function spawnChicken(options = {}) {
-    if (!gameRunning || gamePaused || chickens.size >= spawnLimit) {
+    if (!gameRunning || gamePaused || chickens.size >= getActiveSpawnLimit()) {
         return;
     }
 
@@ -835,13 +916,18 @@ function spawnChicken(options = {}) {
     const y = options.y ?? (minY + Math.random() * Math.max(0, maxY - minY));
     const direction = options.direction ?? (Math.random() > 0.5 ? 1 : -1);
     const type = options.type ?? getRandomChickenType();
-    const speed = options.speed ?? (type.speedMin + Math.random() * (type.speedMax - type.speedMin));
+    const baseSpeed = options.speed ?? (type.speedMin + Math.random() * (type.speedMax - type.speedMin));
+    const speed = currentLevel === 2 ? baseSpeed * levelTwoSpeedMultiplier : baseSpeed;
     const startX = direction === 1 ? -size - 30 : viewport.width + 30;
     const [body, wing, beak] = type.colors;
+    const pointRatio = Math.max(0, Math.min(1, (speed - type.speedMin) / (type.speedMax - type.speedMin || 1)));
 
     const chicken = document.createElement("button");
     chicken.type = "button";
     chicken.className = "chicken";
+    if (currentLevel === 2) {
+        chicken.classList.add("winter-chicken");
+    }
     chicken.style.width = `${size}px`;
     chicken.style.height = `${size}px`;
     chicken.innerHTML = chickenMarkup(body, wing, beak);
@@ -859,7 +945,7 @@ function spawnChicken(options = {}) {
         drift: Math.random() * 0.9 + 0.3,
         phase: Math.random() * Math.PI * 2,
         alive: true,
-        points: Math.round(type.pointsMin + ((speed - type.speedMin) / (type.speedMax - type.speedMin || 1)) * (type.pointsMax - type.pointsMin)),
+        points: Math.round(type.pointsMin + pointRatio * (type.pointsMax - type.pointsMin)),
         tutorialTarget: Boolean(options.tutorialTarget)
     };
 
@@ -941,6 +1027,11 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
             advanceTutorialAfterHit();
         }
         setTimeout(() => removeChicken(chicken.id), 280);
+
+        if (!tutorialMode && currentLevel === 1 && score > levelTwoScoreThreshold) {
+            activateLevelTwo();
+            return;
+        }
     } else {
         if (!tutorialMode) {
             score = Math.max(0, score - 2);
@@ -971,8 +1062,10 @@ function animateChickens(timestamp) {
     spawnAccumulator += deltaMs;
     secondAccumulator += deltaMs;
 
-    if (!tutorialMode && spawnAccumulator >= spawnEveryMs) {
-        spawnAccumulator -= spawnEveryMs;
+    const activeSpawnEveryMs = getActiveSpawnEveryMs();
+
+    if (!tutorialMode && spawnAccumulator >= activeSpawnEveryMs) {
+        spawnAccumulator -= activeSpawnEveryMs;
         spawnChicken();
     }
 
@@ -1042,9 +1135,8 @@ async function endGame(endedEarly = false) {
         localStorage.setItem("chicken-shooting-best", String(bestScore));
     }
 
-    chickens.forEach((chicken) => chicken.el.remove());
-    chickens.clear();
-    clearTutorialTarget();
+    hideLevelBanner();
+    clearAllChickens();
     updateHud();
     if (!wasTutorialMode) {
         await saveScoreIfLoggedIn();
@@ -1059,6 +1151,7 @@ async function endGame(endedEarly = false) {
         <div class="overlay-card">
             <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
             <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
+            <p><strong>Reached level:</strong> ${currentLevel}</p>
             <p><strong>Nivo igraca:</strong> ${playerLevel.level}<br>${playerLevel.summary}</p>
             <ul class="stats-list round-summary">
                 <li>Clicks: <strong>${finalClicks}</strong></li>
@@ -1085,8 +1178,8 @@ function resetRoundState() {
     reloadTimeout = null;
     cancelReloadChallenge();
     rafId = null;
-    chickens.forEach((chicken) => chicken.el.remove());
-    chickens.clear();
+    hideLevelBanner();
+    clearAllChickens();
     score = 0;
     timeLeft = totalTime;
     ammo = magSize;
@@ -1097,7 +1190,8 @@ function resetRoundState() {
     spawnAccumulator = 0;
     secondAccumulator = 0;
     gamePaused = false;
-    clearTutorialTarget();
+    currentLevel = 1;
+    applyLevelTheme();
 }
 
 function startGame() {
@@ -1109,7 +1203,7 @@ function startGame() {
     gameRunning = true;
     updateViewport();
     updateHud();
-    setStatus("Round started. Aim for the quick birds.");
+    setStatus("Round started. Aim for the quick birds and push past 1000 points for the snowy second level.");
 
     for (let i = 0; i < 4; i += 1) {
         spawnChicken();
@@ -1208,6 +1302,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 updateViewport();
+applyLevelTheme();
 queueCrosshairRender();
 updateHud();
 showIntroOverlay();

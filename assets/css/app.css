@@ -3,6 +3,10 @@
     --sky-bottom: #f5fdff;
     --field-top: #7fd16e;
     --field-bottom: #3e8c3a;
+    --mountain-sky-top: #0f1b35;
+    --mountain-sky-bottom: #8aa1bb;
+    --snow-field-top: #eff7ff;
+    --snow-field-bottom: #bed1e7;
     --panel: rgba(16, 34, 26, 0.8);
     --accent: #ffcb45;
     --danger: #ff735a;
@@ -23,6 +27,13 @@ body {
     overflow: hidden;
     cursor: crosshair;
     touch-action: manipulation;
+}
+
+body.level-two {
+    background:
+        radial-gradient(circle at 18% 16%, rgba(188, 214, 255, 0.34), transparent 22%),
+        radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.2), transparent 18%),
+        linear-gradient(180deg, var(--mountain-sky-top) 0%, #203354 26%, var(--mountain-sky-bottom) 52%, var(--snow-field-top) 52%, var(--snow-field-bottom) 100%);
 }
 
 .game-shell {
@@ -102,6 +113,99 @@ body {
 .cloud.two { top: 25%; width: 170px; left: -240px; animation-duration: 30s; animation-delay: -12s; }
 .cloud.three { top: 10%; width: 120px; left: -200px; animation-duration: 20s; animation-delay: -4s; }
 
+.mountain-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+body.level-two .mountain-scene {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+.mountain-range {
+    position: absolute;
+    inset-inline: -6%;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.mountain-far {
+    bottom: 24vh;
+    height: 28vh;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0 20%, rgba(153, 181, 209, 0.8) 20% 40%, rgba(74, 96, 126, 0.94) 40% 100%);
+    clip-path: polygon(0 100%, 0 72%, 8% 68%, 18% 36%, 26% 58%, 37% 24%, 44% 48%, 56% 14%, 67% 54%, 78% 26%, 88% 62%, 100% 40%, 100% 100%);
+    opacity: 0.54;
+}
+
+.mountain-mid {
+    bottom: 18vh;
+    height: 34vh;
+    background:
+        linear-gradient(180deg, #f7fbff 0 18%, #d9e7f5 18% 34%, #8ea8c4 34% 58%, #425877 58% 100%);
+    clip-path: polygon(0 100%, 0 64%, 11% 56%, 23% 18%, 32% 44%, 45% 12%, 52% 38%, 65% 10%, 74% 46%, 84% 22%, 92% 50%, 100% 34%, 100% 100%);
+    opacity: 0.88;
+}
+
+.mountain-near {
+    bottom: 14vh;
+    height: 30vh;
+    background:
+        linear-gradient(180deg, #fcffff 0 16%, #d9e4ef 16% 30%, #7f95ad 30% 50%, #30435c 50% 100%);
+    clip-path: polygon(0 100%, 0 62%, 10% 44%, 18% 60%, 30% 18%, 40% 42%, 49% 8%, 59% 44%, 71% 18%, 81% 48%, 92% 30%, 100% 52%, 100% 100%);
+    filter: drop-shadow(0 18px 20px rgba(10, 18, 34, 0.26));
+}
+
+.pine-line {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 17vh;
+    height: 10vh;
+    background:
+        linear-gradient(180deg, transparent 0 28%, rgba(16, 35, 44, 0.25) 28% 100%),
+        repeating-linear-gradient(90deg,
+            transparent 0 2.5%,
+            rgba(13, 37, 47, 0.9) 2.5% 3.4%,
+            transparent 3.4% 7.2%,
+            rgba(8, 26, 33, 0.92) 7.2% 8.1%,
+            transparent 8.1% 12%);
+    clip-path: polygon(0 100%, 0 65%, 4% 52%, 7% 72%, 10% 45%, 14% 78%, 20% 42%, 24% 70%, 28% 46%, 34% 80%, 40% 40%, 46% 72%, 53% 46%, 58% 82%, 64% 44%, 69% 74%, 76% 40%, 82% 76%, 88% 45%, 94% 70%, 100% 48%, 100% 100%);
+    opacity: 0.72;
+}
+
+.snowfall {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.snowflake {
+    position: absolute;
+    top: -8%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(218, 238, 255, 0.92) 68%, transparent 70%);
+    opacity: 0;
+    animation: snowfall 10s linear infinite;
+}
+
+.snowflake:nth-child(1) { left: 6%; animation-delay: -1s; animation-duration: 9s; transform: scale(0.8); }
+.snowflake:nth-child(2) { left: 14%; animation-delay: -5s; animation-duration: 11s; transform: scale(1.1); }
+.snowflake:nth-child(3) { left: 24%; animation-delay: -2.5s; animation-duration: 8.8s; transform: scale(0.72); }
+.snowflake:nth-child(4) { left: 37%; animation-delay: -7s; animation-duration: 10.4s; transform: scale(1.06); }
+.snowflake:nth-child(5) { left: 51%; animation-delay: -3.4s; animation-duration: 9.4s; transform: scale(0.66); }
+.snowflake:nth-child(6) { left: 63%; animation-delay: -6.8s; animation-duration: 12s; transform: scale(1); }
+.snowflake:nth-child(7) { left: 74%; animation-delay: -4.2s; animation-duration: 8.6s; transform: scale(0.76); }
+.snowflake:nth-child(8) { left: 84%; animation-delay: -8.6s; animation-duration: 10.8s; transform: scale(1.18); }
+.snowflake:nth-child(9) { left: 91%; animation-delay: -1.8s; animation-duration: 9.7s; transform: scale(0.68); }
+.snowflake:nth-child(10) { left: 96%; animation-delay: -5.5s; animation-duration: 11.5s; transform: scale(1.12); }
 .ground {
     position: absolute;
     inset: auto 0 0;
@@ -110,6 +214,29 @@ body {
         linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 24%),
         repeating-linear-gradient(105deg, rgba(255, 255, 255, 0.1) 0 14px, rgba(0, 0, 0, 0.03) 14px 28px);
     border-top: 3px solid rgba(255, 255, 255, 0.16);
+}
+
+body.level-two .sun {
+    top: 74px;
+    right: 9vw;
+    width: 96px;
+    height: 96px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(228, 239, 255, 0.95) 42%, rgba(207, 226, 255, 0.42) 60%, transparent 70%);
+    box-shadow: 0 0 34px rgba(231, 242, 255, 0.2);
+}
+
+body.level-two .cloud,
+body.level-two .cloud::before,
+body.level-two .cloud::after {
+    background: rgba(228, 239, 255, 0.5);
+}
+
+body.level-two .ground {
+    height: 28vh;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(222, 236, 249, 0.08) 20%, transparent 24%),
+        repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.42) 0 18px, rgba(170, 192, 214, 0.22) 18px 36px, rgba(87, 111, 132, 0.18) 36px 54px);
+    border-top: 2px solid rgba(244, 249, 255, 0.72);
 }
 
 .instructions {
@@ -161,6 +288,33 @@ body {
     color: var(--text);
     font-size: clamp(0.96rem, 2vw, 1.08rem);
     line-height: 1.45;
+}
+
+.level-banner {
+    position: absolute;
+    top: 132px;
+    left: 50%;
+    z-index: 23;
+    width: min(580px, calc(100vw - 24px));
+    padding: 14px 18px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(15, 28, 52, 0.88), rgba(38, 58, 92, 0.9));
+    border: 1px solid rgba(196, 222, 255, 0.24);
+    box-shadow: 0 18px 34px rgba(5, 15, 34, 0.28);
+    text-align: center;
+    transform: translate3d(-50%, -16px, 0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.level-banner.show {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+    animation: banner-rise 0.55s ease;
+}
+
+.level-banner.hidden {
+    display: none;
 }
 
 .overlay {
@@ -596,6 +750,21 @@ body {
     animation: flap 0.45s ease-in-out infinite alternate;
 }
 .chicken svg { width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.chicken.winter-chicken .winter-hat {
+    transform-origin: 84px 45px;
+    animation: hat-bob 1.35s ease-in-out infinite alternate;
+}
+.chicken.winter-chicken .winter-hat-top {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22));
+}
+.chicken.winter-chicken .winter-hat-flap-left,
+.chicken.winter-chicken .winter-hat-flap-right {
+    animation: hat-flap 1.5s ease-in-out infinite alternate;
+}
+.chicken.winter-chicken .winter-hat-badge {
+    animation: badge-glint 1.9s ease-in-out infinite;
+    transform-origin: 84px 31px;
+}
 .chicken.hit { animation: pop 0.32s ease forwards; }
 .chicken.tutorial-target::after {
     content: "";
@@ -652,7 +821,27 @@ body {
 @keyframes pop { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); } 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.35) rotate(26deg); } }
 @keyframes fade-shot { from { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.4); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(2); } }
 @keyframes float-score { from { opacity: 1; transform: translate3d(-50%, -50%, 0) translateY(0); } to { opacity: 0; transform: translate3d(-50%, -50%, 0) translateY(-42px); } }
-@keyframes tutorial-ring {
+@keyframes snowfall {
+    0% { transform: translate3d(0, -6vh, 0) scale(1); opacity: 0; }
+    10% { opacity: 0.86; }
+    100% { transform: translate3d(-28px, 108vh, 0) scale(1.08); opacity: 0; }
+}
+@keyframes banner-rise {
+    0% { opacity: 0; transform: translate3d(-50%, -26px, 0) scale(0.96); }
+    100% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+}
+@keyframes hat-bob {
+    0% { transform: rotate(-4deg) translateY(1px); }
+    100% { transform: rotate(3deg) translateY(-2px); }
+}
+@keyframes hat-flap {
+    0% { transform: rotate(-4deg); }
+    100% { transform: rotate(5deg); }
+}
+@keyframes badge-glint {
+    0%, 100% { transform: scale(1); opacity: 0.92; }
+    55% { transform: scale(1.08); opacity: 1; }
+}@keyframes tutorial-ring {
     0% { transform: scale(0.88); opacity: 0.78; }
     55% { transform: scale(1.06); opacity: 1; }
     100% { transform: scale(1.18); opacity: 0.2; }
@@ -788,12 +977,16 @@ body {
         text-align: center;
         border-radius: 12px;
     }
-    .tutorial-banner {
+        .tutorial-banner {
         top: 198px;
         width: calc(100vw - 20px);
         padding: 12px 14px;
     }
-    .chicken { width: 68px; height: 68px; }
+    .level-banner {
+        top: 186px;
+        width: calc(100vw - 20px);
+        padding: 12px 14px;
+    }    .chicken { width: 68px; height: 68px; }
     .sun { width: 78px; height: 78px; top: 96px; right: 16px; }
     .cloud { transform: scale(0.85); transform-origin: left top; }
     .leaderboard-row {
@@ -831,3 +1024,5 @@ body {
         font-size: 1.45rem;
     }
 }
+
+
