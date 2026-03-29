@@ -55,6 +55,17 @@ $initialAppState = [
                 <span class="snowflake"></span>
             </div>
         </div>
+        <div class="tropical-scene" aria-hidden="true">
+            <div class="sea-horizon"></div>
+            <div class="island island-back"></div>
+            <div class="island island-front"></div>
+            <div class="lagoon-shine"></div>
+            <div class="palm palm-left"></div>
+            <div class="palm palm-right"></div>
+            <div class="wave wave-one"></div>
+            <div class="wave wave-two"></div>
+            <div class="wave wave-three"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>
