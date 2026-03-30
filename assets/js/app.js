@@ -115,11 +115,18 @@ const levelConfigs = {
         accessory: "lei"
     }
 };
-const levelMapPins = {
-    1: { region: "Vojvodina, Serbia", top: "34%", left: "52.5%" },
-    2: { region: "Russia", top: "24%", left: "72.5%" },
-    3: { region: "Hawaii", top: "57%", left: "12.5%" }
-};
+const mapPins = [
+    { label: 2, x: 180, y: 160, targetLevel: 2, title: "Russian Ridge", primary: true },
+    { label: 3, x: 280, y: 150, targetLevel: 3, title: "Island Sprint", primary: true },
+    { label: 1, x: 480, y: 130, targetLevel: 1, title: "Farm Run", primary: true },
+    { label: 4, x: 320, y: 350, targetLevel: 1, title: "Farm Run", primary: false },
+    { label: 6, x: 330, y: 420, targetLevel: 1, title: "Farm Run", primary: false },
+    { label: 8, x: 520, y: 330, targetLevel: 1, title: "Farm Run", primary: false },
+    { label: 9, x: 650, y: 250, targetLevel: 3, title: "Island Sprint", primary: false },
+    { label: 10, x: 820, y: 380, targetLevel: 3, title: "Island Sprint", primary: false },
+    { label: 11, x: 880, y: 360, targetLevel: 3, title: "Island Sprint", primary: false },
+    { label: 13, x: 850, y: 150, targetLevel: 2, title: "Russian Ridge", primary: false }
+];
 const viewport = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -294,8 +301,68 @@ function normalizeLevelNumber(level) {
     return Math.min(maxLevel, Math.max(1, Number(level) || 1));
 }
 
+function buildLevelLaunchHref(level) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("level", String(normalizeLevelNumber(level)));
+    url.hash = "";
+    return `${url.pathname}${url.search}`;
+}
+
+function getRequestedLevelFromUrl() {
+    const requestedLevel = new URLSearchParams(window.location.search).get("level");
+    if (!requestedLevel) {
+        return null;
+    }
+
+    return normalizeLevelNumber(requestedLevel);
+}
+
+function clearRequestedLevelFromUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("level");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+
+    window.history.replaceState({}, document.title, nextUrl);
+}
+
 function startLevelFromPin(level) {
     startGame(normalizeLevelNumber(level));
+}
+
+function mapPinLeft(pin) {
+    return `${(pin.x / 1000) * 100}%`;
+}
+
+function mapPinTop(pin) {
+    return `${(pin.y / 500) * 100}%`;
+}
+
+function buildMapPinHref(pin) {
+    if (!pin.href) {
+        return buildLevelLaunchHref(pin.targetLevel);
+    }
+
+    if (pin.external) {
+        return pin.href;
+    }
+
+    if (pin.href.startsWith("?")) {
+        return pin.href;
+    }
+
+    if (pin.href.startsWith("level=")) {
+        return `?${pin.href}`;
+    }
+
+    return buildLevelLaunchHref(pin.targetLevel);
+}
+
+function buildMapPinExtraAttributes(pin) {
+    if (!pin.external) {
+        return "";
+    }
+
+    return ' target="_blank" rel="noopener noreferrer"';
 }
 
 function setOverlayMode(mode = "default") {
@@ -313,7 +380,7 @@ function playMapPinSound(level) {
         playMapPinSound.ctx = ctx;
 
         if (ctx.state === "suspended") {
-            ctx.resume().catch(() => {});
+            ctx.resume().catch(() => { });
         }
 
         const now = ctx.currentTime;
@@ -892,27 +959,49 @@ async function loadLeaderboard() {
 function buildLevelMapMarkup() {
     return `
         <div class="world-map-board" role="group" aria-label="World map with level pins">
-            ${Object.values(levelConfigs).slice(0, 3).map((config) => {
-        const pin = levelMapPins[config.id];
-        const selected = config.id === selectedStartLevel;
+            <svg class="world-map-image world-map-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <rect width="1000" height="500" fill="#2c3e50" rx="10"/>
+                <g opacity="0.28" fill="#d9c59a">
+                    <path d="M78 131c31-24 95-55 152-55 33 0 66 12 89 34 20 18 44 28 79 31 21 2 33 14 31 31-3 20-20 35-51 45-27 9-47 23-61 41-11 14-29 19-50 15-44-8-97-2-147 17-23 9-43 6-61-8-23-18-32-41-27-69 5-26-1-46-17-59-13-11-14-23-3-37 9-10 18-14 27-14 12 0 25 10 39 29z"/>
+                    <path d="M392 63c17-10 47-18 81-18 37 0 67 7 90 20 18 11 42 17 71 18 37 1 61 9 73 23 15 18 13 40-7 65-17 22-22 45-13 68 8 21 4 37-13 47-18 11-45 12-81 4-32-6-60-5-84 3-34 13-57 8-70-14-12-21-31-36-57-45-31-11-45-27-43-49 1-16 11-29 29-39 20-10 29-23 28-38-2-20 10-35 36-45z"/>
+                    <path d="M680 118c35-16 78-25 129-25 48 0 90 8 126 24 29 13 54 32 76 56 10 11 12 26 5 45-6 16-18 29-37 39-19 10-44 18-74 24-28 6-49 17-61 33-16 22-44 29-83 21-30-6-53-4-69 5-25 14-50 15-74 3-20-9-29-25-27-47 1-16-5-28-19-36-17-11-27-24-29-39-2-19 6-35 24-50 25-20 63-38 113-53z"/>
+                    <path d="M296 304c24-14 54-21 89-21 42 0 71 10 86 29 11 13 14 30 8 51-6 22-19 43-40 64-23 24-38 46-44 67-5 18-17 31-36 38-18 7-35 6-50-4-19-12-29-29-29-51 0-15-8-28-24-38-22-14-34-33-35-56-1-30 9-54 30-72 13-12 28-20 45-27z"/>
+                </g>
+                ${mapPins.map((pin) => `
+                    <a
+                        class="svg-pin-link"
+                        href="${escapeHtml(buildMapPinHref(pin))}"${buildMapPinExtraAttributes(pin)}
+                        aria-label="Open ${escapeHtml(pin.title)} from SVG pin ${pin.label}"
+                    >
+                        <g class="svg-pin-base${pin.primary ? " primary" : ""}" transform="translate(${pin.x}, ${pin.y})">
+                            <circle r="15"/>
+                            <text y="5">${pin.label}</text>
+                        </g>
+                    </a>
+                `).join("")}
+            </svg>
+            <div class="map-pin-layer">
+                ${mapPins.map((pin) => {
+        const selected = pin.primary && pin.targetLevel === selectedStartLevel;
+        const launchHref = buildMapPinHref(pin);
 
         return `
-                        <button
-                            class="map-pin ${selected ? "selected" : ""}"
-                            type="button"
-                            data-action="startLevel"
-                            data-level="${config.id}"
-                            style="top: ${pin.top}; left: ${pin.left};"
-                            aria-label="Load ${escapeHtml(config.name)} in ${escapeHtml(pin.region)}"
-                        >
-                            <span class="map-pin-medallion">
-                                <span class="map-pin-number">${config.id}</span>
-                            </span>
-                            <span class="map-pin-name">${escapeHtml(config.mapTitle)}</span>
-                            <span class="map-pin-region">${escapeHtml(pin.region)}</span>
-                        </button>
-                    `;
+                            <a
+                                class="map-pin map-pin-hotspot ${selected ? "selected" : ""}"
+                                href="${escapeHtml(launchHref)}"${buildMapPinExtraAttributes(pin)}
+                                style="top: ${mapPinTop(pin)}; left: ${mapPinLeft(pin)};"
+                                aria-label="Open ${escapeHtml(pin.title)} from map pin ${pin.label}"
+                                title="Open ${escapeHtml(pin.title)}"
+                            >
+                                <span class="map-pin-marker" aria-hidden="true">
+                                    <span class="map-pin-dot"></span>
+                                    <span class="map-pin-number">${pin.label}</span>
+                                </span>
+                                <span class="map-pin-name">${escapeHtml(pin.title)}</span>
+                            </a>
+                        `;
     }).join("")}
+            </div>
         </div>
     `;
 }
@@ -926,8 +1015,8 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
             <div class="intro-panel intro-hero-panel">
                 <span class="tutorial-banner-title">Global Hunt Map</span>
                 <h1>Chicken Shooting</h1>
-                <p>Whole screen start map is live. Click a numbered pin and that exact level loads immediately.</p>
-                <p>Pin <strong>1</strong> sits over Vojvodina, pin <strong>2</strong> over Russia, and pin <strong>3</strong> over Hawaii.</p>
+                <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
+                <p>Each visible pin is now a plain HTML link. Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> and the page opens that exact level directly.</p>
                 ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
             </div>
             <div class="intro-panel intro-status-panel">
@@ -977,6 +1066,7 @@ function showIntroOverlay(showTutorialComplete = false) {
         currentLevel = selectedStartLevel;
         applyLevelTheme();
     }
+    centerCrosshair();
     setOverlayMode("intro");
     overlay.innerHTML = getIntroOverlayMarkup(showTutorialComplete);
     overlay.classList.remove("hidden");
@@ -984,6 +1074,7 @@ function showIntroOverlay(showTutorialComplete = false) {
 }
 
 function showLeaderboardOverlay() {
+    centerCrosshair();
     setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
@@ -1008,6 +1099,7 @@ function openPauseMenu() {
     }
 
     pauseGame();
+    centerCrosshair();
     setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
@@ -1047,7 +1139,6 @@ function attachOverlayHandlers() {
     const endButtons = overlay.querySelectorAll('[data-action="endGame"]');
     const menuButtons = overlay.querySelectorAll('[data-action="openPauseMenu"]');
     const introButtons = overlay.querySelectorAll('[data-action="showIntro"]');
-    const levelButtons = overlay.querySelectorAll('[data-action="startLevel"]');
 
     if (loginForm) {
         loginForm.addEventListener("submit", async (event) => {
@@ -1087,7 +1178,6 @@ function attachOverlayHandlers() {
     endButtons.forEach((button) => button.addEventListener("click", () => endGame(true)));
     menuButtons.forEach((button) => button.addEventListener("click", openPauseMenu));
     introButtons.forEach((button) => button.addEventListener("click", showIntroOverlay));
-    levelButtons.forEach((button) => button.addEventListener("click", () => activateMapPin(button)));
 
     if (logoutButton) {
         logoutButton.addEventListener("click", async () => {
@@ -1537,6 +1627,12 @@ function queueCrosshairRender() {
     });
 }
 
+function centerCrosshair() {
+    pointerX = window.innerWidth / 2;
+    pointerY = window.innerHeight / 2;
+    queueCrosshairRender();
+}
+
 menuControl.addEventListener("click", openPauseMenu);
 restartControl.addEventListener("click", restartGame);
 gameArea.addEventListener("click", (event) => shootAt(event.clientX, event.clientY, null, false));
@@ -1597,7 +1693,14 @@ updateViewport();
 applyLevelTheme();
 queueCrosshairRender();
 updateHud();
-showIntroOverlay();
+const requestedLevelFromUrl = getRequestedLevelFromUrl();
+if (requestedLevelFromUrl !== null) {
+    selectStartLevel(requestedLevelFromUrl, { render: false, force: true });
+    clearRequestedLevelFromUrl();
+    startGame(requestedLevelFromUrl);
+} else {
+    showIntroOverlay();
+}
 loadLeaderboard();
 
 
