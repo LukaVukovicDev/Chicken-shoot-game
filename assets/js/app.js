@@ -161,7 +161,6 @@ let currentLevel = 1;
 let maxUnlockedLevel = 1;
 let selectedStartLevel = 1;
 let levelTransitionTimeout = null;
-let levelPinLaunchTimeout = null;
 
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
@@ -325,18 +324,6 @@ function clearRequestedLevelFromUrl() {
     window.history.replaceState({}, document.title, nextUrl);
 }
 
-function startLevelFromPin(level) {
-    startGame(normalizeLevelNumber(level));
-}
-
-function mapPinLeft(pin) {
-    return `${(pin.x / 1000) * 100}%`;
-}
-
-function mapPinTop(pin) {
-    return `${(pin.y / 500) * 100}%`;
-}
-
 function buildMapPinHref(pin) {
     if (!pin.href) {
         return buildLevelLaunchHref(pin.targetLevel);
@@ -367,55 +354,6 @@ function buildMapPinExtraAttributes(pin) {
 
 function setOverlayMode(mode = "default") {
     overlay.classList.toggle("intro-overlay", mode === "intro");
-}
-
-function playMapPinSound(level) {
-    if (!window.AudioContext && !window.webkitAudioContext) {
-        return;
-    }
-
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = playMapPinSound.ctx || new AudioCtx();
-        playMapPinSound.ctx = ctx;
-
-        if (ctx.state === "suspended") {
-            ctx.resume().catch(() => { });
-        }
-
-        const now = ctx.currentTime;
-        const baseFrequency = 320 + (normalizeLevelNumber(level) * 90);
-        const notes = [baseFrequency, baseFrequency * 1.25];
-
-        notes.forEach((frequency, index) => {
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.type = index === 0 ? "triangle" : "sine";
-            oscillator.frequency.setValueAtTime(frequency, now);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(index === 0 ? 0.055 : 0.03, now + 0.02 + (index * 0.015));
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22 + (index * 0.04));
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.start(now + (index * 0.018));
-            oscillator.stop(now + 0.28 + (index * 0.05));
-        });
-    } catch (error) {
-        // Ignore audio failures and continue launching the selected level.
-    }
-}
-
-function activateMapPin(button) {
-    const level = normalizeLevelNumber(button.dataset.level);
-    clearTimeout(levelPinLaunchTimeout);
-    overlay.querySelectorAll(".map-pin.activated").forEach((pin) => pin.classList.remove("activated"));
-    button.classList.add("activated");
-    playMapPinSound(level);
-    levelPinLaunchTimeout = setTimeout(() => {
-        button.classList.remove("activated");
-        startLevelFromPin(level);
-        levelPinLaunchTimeout = null;
-    }, 220);
 }
 
 function applyLevelTheme() {
@@ -980,28 +918,6 @@ function buildLevelMapMarkup() {
                     </a>
                 `).join("")}
             </svg>
-            <div class="map-pin-layer">
-                ${mapPins.map((pin) => {
-        const selected = pin.primary && pin.targetLevel === selectedStartLevel;
-        const launchHref = buildMapPinHref(pin);
-
-        return `
-                            <a
-                                class="map-pin map-pin-hotspot ${selected ? "selected" : ""}"
-                                href="${escapeHtml(launchHref)}"${buildMapPinExtraAttributes(pin)}
-                                style="top: ${mapPinTop(pin)}; left: ${mapPinLeft(pin)};"
-                                aria-label="Open ${escapeHtml(pin.title)} from map pin ${pin.label}"
-                                title="Open ${escapeHtml(pin.title)}"
-                            >
-                                <span class="map-pin-marker" aria-hidden="true">
-                                    <span class="map-pin-dot"></span>
-                                    <span class="map-pin-number">${pin.label}</span>
-                                </span>
-                                <span class="map-pin-name">${escapeHtml(pin.title)}</span>
-                            </a>
-                        `;
-    }).join("")}
-            </div>
         </div>
     `;
 }
@@ -1016,7 +932,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                 <span class="tutorial-banner-title">Global Hunt Map</span>
                 <h1>Chicken Shooting</h1>
                 <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
-                <p>Each visible pin is now a plain HTML link. Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> and the page opens that exact level directly.</p>
+                <p>Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> on the map to open that exact level directly.</p>
                 ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
             </div>
             <div class="intro-panel intro-status-panel">
