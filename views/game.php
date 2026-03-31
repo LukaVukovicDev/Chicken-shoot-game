@@ -80,6 +80,43 @@ $initialAppState = [
         <?php if ($dbError): ?>
             <div class="db-warning">Database error detected. Login, register and leaderboard are disabled until SQLite works again.</div>
         <?php endif; ?>
+        <div class="cookie-consent hidden" id="cookieConsent" role="dialog" aria-live="polite" aria-label="Cookie options">
+            <div class="cookie-consent-card">
+                <span class="tutorial-banner-title">Privacy</span>
+                <h2 class="cookie-title">Cookie opcije za sajt</h2>
+                <p class="cookie-copy">Neophodni kolacici drze prijavu i sigurnost sajta. Funkcionalni kolacici cuvaju lokalni rekord i otkljucane nivoe na ovom uredjaju.</p>
+                <div class="cookie-actions">
+                    <button class="button secondary" id="cookieEssentialButton" type="button">Samo neophodno</button>
+                    <button class="button secondary" id="cookieSettingsButton" type="button">Podesi</button>
+                    <button class="button" id="cookieAcceptButton" type="button">Prihvati sve</button>
+                </div>
+            </div>
+        </div>
+        <div class="cookie-panel hidden" id="cookiePanel" role="dialog" aria-labelledby="cookiePanelTitle">
+            <div class="cookie-panel-card">
+                <span class="tutorial-banner-title">Kolacici</span>
+                <h2 class="cookie-title" id="cookiePanelTitle">Podesavanja kolacica</h2>
+                <div class="cookie-option">
+                    <div class="cookie-option-copy">
+                        <strong>Neophodni kolacici</strong>
+                        <p>Obavezni su za sesiju, prijavu i CSRF zastitu, pa su uvek ukljuceni.</p>
+                    </div>
+                    <span class="cookie-badge">Uvijek aktivni</span>
+                </div>
+                <label class="cookie-option cookie-option-toggle" for="cookieFunctionalToggle">
+                    <div class="cookie-option-copy">
+                        <strong>Funkcionalni kolacici</strong>
+                        <p>Cuvaju best score i otkljucane nivoe na ovom browseru.</p>
+                    </div>
+                    <input class="cookie-toggle" id="cookieFunctionalToggle" type="checkbox">
+                </label>
+                <div class="cookie-actions cookie-actions-panel">
+                    <button class="button secondary" id="cookieCancelButton" type="button">Otkazi</button>
+                    <button class="button" id="cookieSaveButton" type="button">Sacuvaj izbor</button>
+                </div>
+            </div>
+        </div>
+        <button class="cookie-preferences-button hidden" id="cookiePreferencesButton" type="button">Cookie opcije</button>
     </div>
     <script src="assets/js/app.js"></script>
 </body>

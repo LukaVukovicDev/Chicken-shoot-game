@@ -35,6 +35,15 @@ const crosshair = document.getElementById("crosshair");
 const menuControl = document.getElementById("menuControl");
 const restartControl = document.getElementById("restartControl");
 const playerNameEl = document.getElementById("playerName");
+const cookieConsent = document.getElementById("cookieConsent");
+const cookiePanel = document.getElementById("cookiePanel");
+const cookiePreferencesButton = document.getElementById("cookiePreferencesButton");
+const cookieAcceptButton = document.getElementById("cookieAcceptButton");
+const cookieEssentialButton = document.getElementById("cookieEssentialButton");
+const cookieSettingsButton = document.getElementById("cookieSettingsButton");
+const cookieFunctionalToggle = document.getElementById("cookieFunctionalToggle");
+const cookieSaveButton = document.getElementById("cookieSaveButton");
+const cookieCancelButton = document.getElementById("cookieCancelButton");
 
 const totalTime = 45;
 const magSize = 6;
@@ -49,7 +58,11 @@ const levelThreeSpawnLimit = 12;
 const levelThreeSpawnEveryMs = 620;
 const levelThreeSpeedMultiplier = 1.32;
 const maxLevel = 3;
+const bestScoreStorageKey = "chicken-shooting-best";
 const levelUnlockStorageKey = "chicken-shooting-unlocked-level";
+const cookieConsentStorageKey = "chicken-shooting-cookie-consent";
+const cookieConsentMaxAge = 60 * 60 * 24 * 180;
+const functionalStorageKeys = [bestScoreStorageKey, levelUnlockStorageKey];
 const reloadSequenceLength = 4;
 const reloadDirections = ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"];
 const reloadSymbols = {
@@ -139,7 +152,8 @@ let timeLeft = totalTime;
 let ammo = magSize;
 let clickCount = 0;
 let hitCount = 0;
-let bestScore = Number(localStorage.getItem("chicken-shooting-best") || 0);
+let cookieConsentState = getCookieConsentState();
+let bestScore = Number(readFunctionalStorage(bestScoreStorageKey) || 0);
 let gameRunning = false;
 let gamePaused = false;
 let reloadTimeout = null;
@@ -228,6 +242,86 @@ function formatMetric(value, digits = 1) {
     return Number(value || 0).toFixed(digits);
 }
 
+function getCookieValue(name) {
+    const encodedName = `${encodeURIComponent(name)}=`;
+    const match = document.cookie
+        .split(";")
+        .map((value) => value.trim())
+        .find((value) => value.startsWith(encodedName));
+
+    return match ? decodeURIComponent(match.slice(encodedName.length)) : "";
+}
+
+function getCookieConsentState() {
+    const storedValue = getCookieValue(cookieConsentStorageKey);
+
+    if (storedValue === "all") {
+        return {
+            essential: true,
+            functional: true
+        };
+    }
+
+    if (storedValue === "essential") {
+        return {
+            essential: true,
+            functional: false
+        };
+    }
+
+    return null;
+}
+
+function canUseFunctionalStorage() {
+    return Boolean(cookieConsentState?.functional);
+}
+
+function readFunctionalStorage(key) {
+    if (!canUseFunctionalStorage()) {
+        return null;
+    }
+
+    try {
+        return localStorage.getItem(key);
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeFunctionalStorage(key, value) {
+    if (!canUseFunctionalStorage()) {
+        return;
+    }
+
+    try {
+        localStorage.setItem(key, value);
+    } catch (error) {
+        // Ignore browser storage failures and continue without persistence.
+    }
+}
+
+function removeFunctionalStorage(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        // Ignore browser storage failures and continue without persistence.
+    }
+}
+
+function clearFunctionalStorage() {
+    functionalStorageKeys.forEach((key) => removeFunctionalStorage(key));
+}
+
+function persistCookieConsent(functionalEnabled) {
+    const nextValue = functionalEnabled ? "all" : "essential";
+    const securePart = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${encodeURIComponent(cookieConsentStorageKey)}=${encodeURIComponent(nextValue)}; Max-Age=${cookieConsentMaxAge}; Path=/; SameSite=Lax${securePart}`;
+    cookieConsentState = {
+        essential: true,
+        functional: functionalEnabled
+    };
+}
+
 function escapeHtml(value) {
     return String(value)
         .replace(/&/g, "&amp;")
@@ -257,15 +351,88 @@ function computeUnlockedLevelFromScore(scoreValue) {
 }
 
 function bootstrapLevelProgress() {
-    const storedLevel = Number(localStorage.getItem(levelUnlockStorageKey) || 1);
+    const storedLevel = Number(readFunctionalStorage(levelUnlockStorageKey) || 1);
     maxUnlockedLevel = Math.min(maxLevel, Math.max(1, storedLevel, computeUnlockedLevelFromScore(bestScore)));
     selectedStartLevel = maxUnlockedLevel;
     currentLevel = selectedStartLevel;
-    localStorage.setItem(levelUnlockStorageKey, String(maxUnlockedLevel));
+    writeFunctionalStorage(levelUnlockStorageKey, String(maxUnlockedLevel));
 }
 
 function persistUnlockedLevel() {
-    localStorage.setItem(levelUnlockStorageKey, String(maxUnlockedLevel));
+    writeFunctionalStorage(levelUnlockStorageKey, String(maxUnlockedLevel));
+}
+
+function persistBestScore() {
+    writeFunctionalStorage(bestScoreStorageKey, String(bestScore));
+}
+
+function refreshOverlayAfterCookieChange() {
+    if (overlay.classList.contains("hidden")) {
+        return;
+    }
+
+    if (!gameRunning && !gamePaused) {
+        showIntroOverlay();
+        return;
+    }
+
+    if (gamePaused) {
+        openPauseMenu();
+    }
+}
+
+function applyCookiePreferenceState({ clearStoredData = false } = {}) {
+    if (clearStoredData) {
+        clearFunctionalStorage();
+    }
+
+    if (canUseFunctionalStorage()) {
+        if (gameRunning || gamePaused) {
+            persistBestScore();
+            persistUnlockedLevel();
+        } else {
+            bestScore = Number(readFunctionalStorage(bestScoreStorageKey) || 0);
+            maxUnlockedLevel = Math.min(maxLevel, Math.max(1, Number(readFunctionalStorage(levelUnlockStorageKey) || 1), computeUnlockedLevelFromScore(bestScore)));
+            selectedStartLevel = Math.min(maxUnlockedLevel, Math.max(1, selectedStartLevel));
+            currentLevel = selectedStartLevel;
+            persistUnlockedLevel();
+        }
+    } else if (!gameRunning && !gamePaused) {
+        bestScore = 0;
+        maxUnlockedLevel = 1;
+        selectedStartLevel = 1;
+        currentLevel = 1;
+    }
+
+    applyLevelTheme();
+    updateHud();
+    refreshOverlayAfterCookieChange();
+}
+
+function closeCookiePanel() {
+    cookiePanel.classList.add("hidden");
+}
+
+function openCookiePanel() {
+    cookieFunctionalToggle.checked = Boolean(cookieConsentState?.functional);
+    cookiePanel.classList.remove("hidden");
+}
+
+function updateCookieUi() {
+    const consentResolved = cookieConsentState !== null;
+    cookieConsent.classList.toggle("hidden", consentResolved);
+    cookiePreferencesButton.classList.toggle("hidden", !consentResolved);
+    document.body.classList.toggle("cookie-banner-visible", !consentResolved);
+    if (cookieFunctionalToggle) {
+        cookieFunctionalToggle.checked = Boolean(cookieConsentState?.functional);
+    }
+}
+
+function saveCookiePreferences(functionalEnabled) {
+    persistCookieConsent(functionalEnabled);
+    closeCookiePanel();
+    applyCookiePreferenceState({ clearStoredData: !functionalEnabled });
+    updateCookieUi();
 }
 
 function getLevelConfig(level = currentLevel) {
@@ -1428,7 +1595,7 @@ async function endGame(endedEarly = false) {
 
     if (!wasTutorialMode && finalScore > bestScore) {
         bestScore = finalScore;
-        localStorage.setItem("chicken-shooting-best", String(bestScore));
+        persistBestScore();
     }
 
     if (!wasTutorialMode) {
@@ -1578,6 +1745,12 @@ window.addEventListener("touchmove", (event) => {
 
 window.addEventListener("resize", updateViewport, { passive: true });
 window.addEventListener("keydown", (event) => {
+    if (!cookiePanel.classList.contains("hidden") && event.key === "Escape") {
+        event.preventDefault();
+        closeCookiePanel();
+        return;
+    }
+
     if (reloadActive && !gamePaused && isArrowKey(event.key)) {
         event.preventDefault();
         handleReloadInput(event.key);
@@ -1605,8 +1778,16 @@ window.addEventListener("keydown", (event) => {
     }
 });
 
+cookieAcceptButton?.addEventListener("click", () => saveCookiePreferences(true));
+cookieEssentialButton?.addEventListener("click", () => saveCookiePreferences(false));
+cookieSettingsButton?.addEventListener("click", openCookiePanel);
+cookiePreferencesButton?.addEventListener("click", openCookiePanel);
+cookieSaveButton?.addEventListener("click", () => saveCookiePreferences(Boolean(cookieFunctionalToggle?.checked)));
+cookieCancelButton?.addEventListener("click", closeCookiePanel);
+
 updateViewport();
 applyLevelTheme();
+updateCookieUi();
 queueCrosshairRender();
 updateHud();
 const requestedLevelFromUrl = getRequestedLevelFromUrl();
