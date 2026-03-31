@@ -43,6 +43,12 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         case 'logout':
             handleLogoutAction($database);
             break;
+        case 'update_profile':
+            handleUpdateProfileAction($database);
+            break;
+        case 'change_password':
+            handleChangePasswordAction($database);
+            break;
         case 'save_score':
             handleSaveScoreAction($database);
             break;
@@ -227,6 +233,102 @@ function handleSaveScoreAction(PDO $db): never
 
     $response = buildAppPayload($db, $user);
     $response['message'] = 'Score saved.';
+
+    jsonResponse($response);
+}
+
+function requireAuthenticatedUser(PDO $db): array
+{
+    $user = getSessionUser($db);
+    if (!$user) {
+        jsonResponse(['ok' => false, 'message' => 'You need to log in first.'], 401);
+    }
+
+    return $user;
+}
+
+function handleUpdateProfileAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+    $nickname = trim((string) ($_POST['nickname'] ?? ''));
+
+    if (!preg_match('/^[\p{L}\p{N}_\- ]{3,20}$/u', $nickname)) {
+        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters.'], 422);
+    }
+
+    $nicknameCheck = $db->prepare(
+        'SELECT id
+         FROM users
+         WHERE lower(nickname) = lower(:nickname) AND id != :id'
+    );
+    $nicknameCheck->execute([
+        ':nickname' => $nickname,
+        ':id' => (int) $user['id'],
+    ]);
+
+    if ($nicknameCheck->fetch()) {
+        jsonResponse(['ok' => false, 'message' => 'That nickname already exists. Choose another one.'], 409);
+    }
+
+    $update = $db->prepare('UPDATE users SET nickname = :nickname WHERE id = :id');
+    $update->execute([
+        ':nickname' => $nickname,
+        ':id' => (int) $user['id'],
+    ]);
+
+    logSecurityEvent('user_profile_updated', [
+        'user_id' => (int) $user['id'],
+        'ip' => getClientIpAddress(),
+    ]);
+
+    $response = buildAppPayload($db, getSessionUser($db));
+    $response['message'] = 'Profile updated.';
+
+    jsonResponse($response);
+}
+
+function handleChangePasswordAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+    $currentPassword = (string) ($_POST['current_password'] ?? '');
+    $newPassword = (string) ($_POST['new_password'] ?? '');
+
+    if ($currentPassword === '' || $newPassword === '') {
+        jsonResponse(['ok' => false, 'message' => 'Current password and new password are required.'], 422);
+    }
+
+    if (mb_strlen($newPassword) < 6) {
+        jsonResponse(['ok' => false, 'message' => 'Password must have at least 6 characters.'], 422);
+    }
+
+    $statement = $db->prepare('SELECT password_hash FROM users WHERE id = :id');
+    $statement->execute([':id' => (int) $user['id']]);
+    $credentials = $statement->fetch() ?: null;
+
+    if (!$credentials || !password_verify($currentPassword, (string) $credentials['password_hash'])) {
+        jsonResponse(['ok' => false, 'message' => 'Current password is not correct.'], 401);
+    }
+
+    if (password_verify($newPassword, (string) $credentials['password_hash'])) {
+        jsonResponse(['ok' => false, 'message' => 'Choose a different password from the current one.'], 422);
+    }
+
+    $update = $db->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+    $update->execute([
+        ':password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+        ':id' => (int) $user['id'],
+    ]);
+
+    rotateSessionSecurity();
+    $_SESSION['user_id'] = (int) $user['id'];
+
+    logSecurityEvent('user_password_changed', [
+        'user_id' => (int) $user['id'],
+        'ip' => getClientIpAddress(),
+    ]);
+
+    $response = buildAppPayload($db, getSessionUser($db));
+    $response['message'] = 'Password updated.';
 
     jsonResponse($response);
 }

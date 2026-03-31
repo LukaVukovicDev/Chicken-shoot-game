@@ -36,14 +36,9 @@ const menuControl = document.getElementById("menuControl");
 const restartControl = document.getElementById("restartControl");
 const playerNameEl = document.getElementById("playerName");
 const cookieConsent = document.getElementById("cookieConsent");
-const cookiePanel = document.getElementById("cookiePanel");
-const cookiePreferencesButton = document.getElementById("cookiePreferencesButton");
 const cookieAcceptButton = document.getElementById("cookieAcceptButton");
 const cookieEssentialButton = document.getElementById("cookieEssentialButton");
 const cookieSettingsButton = document.getElementById("cookieSettingsButton");
-const cookieFunctionalToggle = document.getElementById("cookieFunctionalToggle");
-const cookieSaveButton = document.getElementById("cookieSaveButton");
-const cookieCancelButton = document.getElementById("cookieCancelButton");
 
 const totalTime = 45;
 const magSize = 6;
@@ -381,7 +376,7 @@ function refreshOverlayAfterCookieChange() {
     }
 }
 
-function applyCookiePreferenceState({ clearStoredData = false } = {}) {
+function applyCookiePreferenceState({ clearStoredData = false, refreshOverlay = true } = {}) {
     if (clearStoredData) {
         clearFunctionalStorage();
     }
@@ -406,32 +401,24 @@ function applyCookiePreferenceState({ clearStoredData = false } = {}) {
 
     applyLevelTheme();
     updateHud();
-    refreshOverlayAfterCookieChange();
-}
-
-function closeCookiePanel() {
-    cookiePanel.classList.add("hidden");
-}
-
-function openCookiePanel() {
-    cookieFunctionalToggle.checked = Boolean(cookieConsentState?.functional);
-    cookiePanel.classList.remove("hidden");
+    if (refreshOverlay) {
+        refreshOverlayAfterCookieChange();
+    }
 }
 
 function updateCookieUi() {
     const consentResolved = cookieConsentState !== null;
     cookieConsent.classList.toggle("hidden", consentResolved);
-    cookiePreferencesButton.classList.toggle("hidden", !consentResolved);
     document.body.classList.toggle("cookie-banner-visible", !consentResolved);
-    if (cookieFunctionalToggle) {
-        cookieFunctionalToggle.checked = Boolean(cookieConsentState?.functional);
-    }
 }
 
-function saveCookiePreferences(functionalEnabled) {
+function saveCookiePreferences(functionalEnabled, options = {}) {
+    const { refreshOverlay = true } = options;
     persistCookieConsent(functionalEnabled);
-    closeCookiePanel();
-    applyCookiePreferenceState({ clearStoredData: !functionalEnabled });
+    applyCookiePreferenceState({
+        clearStoredData: !functionalEnabled,
+        refreshOverlay
+    });
     updateCookieUi();
 }
 
@@ -971,6 +958,7 @@ function getAuthMarkup() {
                 <h3>Logged In</h3>
                 <p>You are playing as <strong>${escapeHtml(appState.user.nickname)}</strong> (${escapeHtml(appState.user.username)}).</p>
                 <div class="button-row">
+                    <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                     <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                     <button class="button secondary" type="button" data-action="logout">Logout</button>
                 </div>
@@ -1009,6 +997,23 @@ function showFeedback(response) {
     }
     feedback.textContent = response.message || "";
     feedback.className = `feedback ${response.ok ? "success" : "error"}`;
+}
+
+function showScopedFeedback(selector, response) {
+    const feedback = overlay.querySelector(selector);
+    if (!feedback) {
+        return;
+    }
+
+    feedback.textContent = response.message || "";
+    feedback.className = `feedback ${response.ok ? "success" : "error"}`;
+}
+
+function buildFeedbackMarkup(id, feedback = null) {
+    const className = feedback ? `feedback ${feedback.ok ? "success" : "error"}` : "feedback";
+    const message = feedback?.message ? escapeHtml(feedback.message) : "";
+
+    return `<div id="${escapeHtml(id)}" class="${className}">${message}</div>`;
 }
 
 async function postAction(action, formData) {
@@ -1089,6 +1094,116 @@ function buildLevelMapMarkup() {
     `;
 }
 
+function getCookiePreferenceDescription() {
+    return canUseFunctionalStorage()
+        ? "Funkcionalni kolacici su ukljuceni. Lokalni rekord i otkljucani nivoi se cuvaju na ovom browseru."
+        : "Koristis samo neophodne kolacice. Lokalni rekord i nivoi se ne cuvaju na ovom browseru.";
+}
+
+function getSettingsOverlayMarkup(feedback = null) {
+    const isLoggedIn = Boolean(appState.user);
+    const backAction = gameRunning || gamePaused ? "openPauseMenu" : "showIntro";
+    const backLabel = gameRunning || gamePaused ? "Back to Game Menu" : "Back to Main Menu";
+
+    return `
+        <div class="overlay-card">
+            <h2>User Settings</h2>
+            <p>Ovde mozes da upravljas profilom i privatnoscu bez plutajuceg dugmeta koje prekriva ekran.</p>
+            ${buildFeedbackMarkup("settingsFeedback", feedback)}
+            <div class="settings-layout">
+                <div class="settings-stack">
+                    <div class="card-section">
+                        <h3>Profile</h3>
+                        ${isLoggedIn ? `
+                            <p>Username ostaje fiksan, a nickname se prikazuje na leaderboard-u i u HUD-u.</p>
+                            <div class="settings-summary">
+                                <div class="settings-chip">
+                                    <span class="settings-chip-label">Username</span>
+                                    <strong>${escapeHtml(appState.user.username)}</strong>
+                                </div>
+                                <div class="settings-chip">
+                                    <span class="settings-chip-label">Current Nickname</span>
+                                    <strong>${escapeHtml(appState.user.nickname)}</strong>
+                                </div>
+                            </div>
+                            <form id="profileForm" class="button-row-spaced">
+                                <div class="field-group">
+                                    <label for="settingsNickname">Nickname</label>
+                                    <input id="settingsNickname" name="nickname" type="text" minlength="3" maxlength="20" value="${escapeHtml(appState.user.nickname)}" autocomplete="nickname" required>
+                                </div>
+                                <button class="button" type="submit">Save Profile</button>
+                            </form>
+                        ` : `
+                            <p>Trenutno igras kao guest. Prijavi se iz glavnog menija da bi menjao profil i lozinku.</p>
+                        `}
+                    </div>
+                    <div class="card-section">
+                        <h3>Security</h3>
+                        ${isLoggedIn ? `
+                            <p>Promeni lozinku bez napustanja igre. Posle izmene sesija ostaje prijavljena i osvezena.</p>
+                            <form id="passwordForm">
+                                <div class="field-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input id="currentPassword" name="current_password" type="password" minlength="6" autocomplete="current-password" required>
+                                </div>
+                                <div class="field-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input id="newPassword" name="new_password" type="password" minlength="6" autocomplete="new-password" required>
+                                </div>
+                                <div class="field-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input id="confirmPassword" name="confirm_password" type="password" minlength="6" autocomplete="new-password" required>
+                                </div>
+                                <button class="button" type="submit">Change Password</button>
+                            </form>
+                        ` : `
+                            <p>Bez prijave nema promena bezbednosnih podesavanja. Cookie opcije su dostupne i u guest modu.</p>
+                        `}
+                    </div>
+                </div>
+                <div class="settings-stack">
+                    <div class="card-section">
+                        <h3>Cookie Preferences</h3>
+                        <p>${escapeHtml(getCookiePreferenceDescription())}</p>
+                        <form id="cookieSettingsForm">
+                            <div class="settings-toggle">
+                                <div>
+                                    <strong>Essential cookies</strong>
+                                    <p>Sesija, login i CSRF zastita su uvek ukljuceni.</p>
+                                </div>
+                                <span class="settings-badge">Always on</span>
+                            </div>
+                            <label class="settings-toggle" for="settingsCookieFunctional">
+                                <div>
+                                    <strong>Functional cookies</strong>
+                                    <p>Cuvaju local best score i otkljucane nivoe na ovom browseru.</p>
+                                </div>
+                                <input id="settingsCookieFunctional" name="functional_cookies" type="checkbox"${canUseFunctionalStorage() ? " checked" : ""}>
+                            </label>
+                            <div class="button-row button-row-spaced">
+                                <button class="button" type="submit">Save Cookie Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-section">
+                        <h3>Session Overview</h3>
+                        <ul class="menu-list">
+                            <li>Player: <strong>${escapeHtml(appState.user?.nickname || "Guest")}</strong></li>
+                            <li>Account status: <strong>${isLoggedIn ? "Logged in" : "Guest mode"}</strong></li>
+                            <li>Local best score: <strong>${bestScore}</strong></li>
+                            <li>Unlocked routes: <strong>${maxUnlockedLevel} / ${maxLevel}</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="button-row button-row-spaced">
+                ${gamePaused ? '<button class="button secondary" type="button" data-action="resumeGame">Resume Game</button>' : ""}
+                <button class="button secondary" type="button" data-action="${backAction}">${backLabel}</button>
+            </div>
+        </div>
+    `;
+}
+
 function getIntroOverlayMarkup(showTutorialComplete = false) {
     const selectedConfig = getLevelConfig(selectedStartLevel);
 
@@ -1137,6 +1252,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                 <div class="tutorial-actions">
                     <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
                     <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
+                    <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                     <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                 </div>
             </div>
@@ -1166,11 +1282,20 @@ function showLeaderboardOverlay() {
             ${buildLeaderboardMarkup()}
             ${buildAnalyticsMarkup()}
             <div class="button-row button-row-spaced">
+                <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                 <button class="button secondary" type="button" data-action="showIntro">Back</button>
                 ${gameRunning || gamePaused ? '<button class="button" type="button" data-action="openPauseMenu">Game Menu</button>' : '<button class="button" type="button" data-action="startGame">Start Hunt</button>'}
             </div>
         </div>
     `;
+    overlay.classList.remove("hidden");
+    attachOverlayHandlers();
+}
+
+function showSettingsOverlay(feedback = null) {
+    centerCrosshair();
+    setOverlayMode("default");
+    overlay.innerHTML = getSettingsOverlayMarkup(feedback);
     overlay.classList.remove("hidden");
     attachOverlayHandlers();
 }
@@ -1201,6 +1326,7 @@ function openPauseMenu() {
             <div class="button-row button-row-spaced">
                 <button class="button" type="button" data-action="resumeGame">Resume</button>
                 <button class="button" type="button" data-action="restartGame">Restart</button>
+                <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                 <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                 <button class="button danger-button" type="button" data-action="endGame">End Game</button>
             </div>
@@ -1213,6 +1339,9 @@ function openPauseMenu() {
 function attachOverlayHandlers() {
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
+    const profileForm = document.getElementById("profileForm");
+    const passwordForm = document.getElementById("passwordForm");
+    const cookieSettingsForm = document.getElementById("cookieSettingsForm");
     const openLeaderboardButton = overlay.querySelector('[data-action="openLeaderboard"]');
     const logoutButton = overlay.querySelector('[data-action="logout"]');
     const resumeButton = overlay.querySelector('[data-action="resumeGame"]');
@@ -1222,6 +1351,7 @@ function attachOverlayHandlers() {
     const endButtons = overlay.querySelectorAll('[data-action="endGame"]');
     const menuButtons = overlay.querySelectorAll('[data-action="openPauseMenu"]');
     const introButtons = overlay.querySelectorAll('[data-action="showIntro"]');
+    const settingsButtons = overlay.querySelectorAll('[data-action="openSettings"]');
 
     if (loginForm) {
         loginForm.addEventListener("submit", async (event) => {
@@ -1253,6 +1383,64 @@ function attachOverlayHandlers() {
         });
     }
 
+    if (profileForm) {
+        profileForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const response = await postAction("update_profile", new FormData(profileForm));
+            if (!response.ok) {
+                showScopedFeedback("#settingsFeedback", response);
+                return;
+            }
+
+            appState.user = response.user || appState.user;
+            appState.leaderboard = response.leaderboard || appState.leaderboard;
+            appState.analytics = response.analytics || appState.analytics;
+            updateHud();
+            showSettingsOverlay(response);
+        });
+    }
+
+    if (passwordForm) {
+        passwordForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const confirmPasswordInput = document.getElementById("confirmPassword");
+            const newPasswordInput = document.getElementById("newPassword");
+
+            if (confirmPasswordInput && newPasswordInput && confirmPasswordInput.value !== newPasswordInput.value) {
+                showScopedFeedback("#settingsFeedback", {
+                    ok: false,
+                    message: "New password and confirmation must match."
+                });
+                return;
+            }
+
+            const formData = new FormData(passwordForm);
+            formData.delete("confirm_password");
+            const response = await postAction("change_password", formData);
+            if (!response.ok) {
+                showScopedFeedback("#settingsFeedback", response);
+                return;
+            }
+
+            appState.user = response.user || appState.user;
+            appState.leaderboard = response.leaderboard || appState.leaderboard;
+            appState.analytics = response.analytics || appState.analytics;
+            showSettingsOverlay(response);
+        });
+    }
+
+    if (cookieSettingsForm) {
+        cookieSettingsForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const functionalCookieInput = document.getElementById("settingsCookieFunctional");
+            saveCookiePreferences(Boolean(functionalCookieInput?.checked), { refreshOverlay: false });
+            showSettingsOverlay({
+                ok: true,
+                message: "Cookie settings saved."
+            });
+        });
+    }
+
     openLeaderboardButton?.addEventListener("click", showLeaderboardOverlay);
     resumeButton?.addEventListener("click", resumeGameFromPause);
     startButtons.forEach((button) => button.addEventListener("click", () => startGame()));
@@ -1261,6 +1449,7 @@ function attachOverlayHandlers() {
     endButtons.forEach((button) => button.addEventListener("click", () => endGame(true)));
     menuButtons.forEach((button) => button.addEventListener("click", openPauseMenu));
     introButtons.forEach((button) => button.addEventListener("click", showIntroOverlay));
+    settingsButtons.forEach((button) => button.addEventListener("click", () => showSettingsOverlay()));
 
     if (logoutButton) {
         logoutButton.addEventListener("click", async () => {
@@ -1631,6 +1820,7 @@ async function endGame(endedEarly = false) {
             </ul>
             <div class="button-row">
                 <button class="button" type="button" data-action="restartGame">Play Again</button>
+                <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                 <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                 <button class="button secondary" type="button" data-action="showIntro">Main Menu</button>
             </div>
@@ -1745,12 +1935,6 @@ window.addEventListener("touchmove", (event) => {
 
 window.addEventListener("resize", updateViewport, { passive: true });
 window.addEventListener("keydown", (event) => {
-    if (!cookiePanel.classList.contains("hidden") && event.key === "Escape") {
-        event.preventDefault();
-        closeCookiePanel();
-        return;
-    }
-
     if (reloadActive && !gamePaused && isArrowKey(event.key)) {
         event.preventDefault();
         handleReloadInput(event.key);
@@ -1780,10 +1964,7 @@ window.addEventListener("keydown", (event) => {
 
 cookieAcceptButton?.addEventListener("click", () => saveCookiePreferences(true));
 cookieEssentialButton?.addEventListener("click", () => saveCookiePreferences(false));
-cookieSettingsButton?.addEventListener("click", openCookiePanel);
-cookiePreferencesButton?.addEventListener("click", openCookiePanel);
-cookieSaveButton?.addEventListener("click", () => saveCookiePreferences(Boolean(cookieFunctionalToggle?.checked)));
-cookieCancelButton?.addEventListener("click", closeCookiePanel);
+cookieSettingsButton?.addEventListener("click", () => showSettingsOverlay());
 
 updateViewport();
 applyLevelTheme();

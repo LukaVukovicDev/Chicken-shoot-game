@@ -92,31 +92,6 @@ $initialAppState = [
                 </div>
             </div>
         </div>
-        <div class="cookie-panel hidden" id="cookiePanel" role="dialog" aria-labelledby="cookiePanelTitle">
-            <div class="cookie-panel-card">
-                <span class="tutorial-banner-title">Kolacici</span>
-                <h2 class="cookie-title" id="cookiePanelTitle">Podesavanja kolacica</h2>
-                <div class="cookie-option">
-                    <div class="cookie-option-copy">
-                        <strong>Neophodni kolacici</strong>
-                        <p>Obavezni su za sesiju, prijavu i CSRF zastitu, pa su uvek ukljuceni.</p>
-                    </div>
-                    <span class="cookie-badge">Uvijek aktivni</span>
-                </div>
-                <label class="cookie-option cookie-option-toggle" for="cookieFunctionalToggle">
-                    <div class="cookie-option-copy">
-                        <strong>Funkcionalni kolacici</strong>
-                        <p>Cuvaju best score i otkljucane nivoe na ovom browseru.</p>
-                    </div>
-                    <input class="cookie-toggle" id="cookieFunctionalToggle" type="checkbox">
-                </label>
-                <div class="cookie-actions cookie-actions-panel">
-                    <button class="button secondary" id="cookieCancelButton" type="button">Otkazi</button>
-                    <button class="button" id="cookieSaveButton" type="button">Sacuvaj izbor</button>
-                </div>
-            </div>
-        </div>
-        <button class="cookie-preferences-button hidden" id="cookiePreferencesButton" type="button">Cookie opcije</button>
     </div>
     <script src="assets/js/app.js"></script>
 </body>
