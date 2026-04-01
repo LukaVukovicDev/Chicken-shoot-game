@@ -1210,50 +1210,52 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
     return `
         <div class="intro-map-shell">
             ${buildLevelMapMarkup()}
-            <div class="intro-panel intro-hero-panel">
-                <span class="tutorial-banner-title">Global Hunt Map</span>
-                <h1>Chicken Shooting</h1>
-                <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
-                <p>Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> on the map to open that exact level directly.</p>
-                ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
-            </div>
-            <div class="intro-panel intro-status-panel">
-                <div class="intro-stat">
-                    <span class="intro-stat-label">Selected Route</span>
-                    <strong>${escapeHtml(selectedConfig.mapTitle)}</strong>
+            <div class="intro-layout">
+                <div class="intro-panel intro-hero-panel">
+                    <span class="tutorial-banner-title">Global Hunt Map</span>
+                    <h1>Chicken Shooting</h1>
+                    <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
+                    <p>Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> on the map to open that exact level directly.</p>
+                    ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
                 </div>
-                <div class="intro-stat">
-                    <span class="intro-stat-label">Best Local Score</span>
-                    <strong>${bestScore}</strong>
+                <div class="intro-panel intro-status-panel">
+                    <div class="intro-stat">
+                        <span class="intro-stat-label">Selected Route</span>
+                        <strong>${escapeHtml(selectedConfig.mapTitle)}</strong>
+                    </div>
+                    <div class="intro-stat">
+                        <span class="intro-stat-label">Best Local Score</span>
+                        <strong>${bestScore}</strong>
+                    </div>
+                    <div class="intro-stat">
+                        <span class="intro-stat-label">Unlocked Routes</span>
+                        <strong>${maxUnlockedLevel} / ${maxLevel}</strong>
+                    </div>
+                    <div class="intro-stat">
+                        <span class="intro-stat-label">Launch</span>
+                        <strong>Click any pin</strong>
+                    </div>
                 </div>
-                <div class="intro-stat">
-                    <span class="intro-stat-label">Unlocked Routes</span>
-                    <strong>${maxUnlockedLevel} / ${maxLevel}</strong>
+                <div class="intro-panel intro-info-panel">
+                    <ul class="tutorial-list">
+                        <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</li>
+                    </ul>
                 </div>
-                <div class="intro-stat">
-                    <span class="intro-stat-label">Launch</span>
-                    <strong>Click any pin</strong>
+                <div class="intro-panel intro-auth-panel">
+                    <span class="tutorial-banner-title">Account</span>
+                    ${getAuthMarkup()}
+                    <div id="authFeedback" class="feedback"></div>
                 </div>
-            </div>
-            <div class="intro-panel intro-info-panel">
-                <ul class="tutorial-list">
-                    <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
-                    <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
-                    <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
-                    <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</li>
-                </ul>
-            </div>
-            <div class="intro-panel intro-auth-panel">
-                <span class="tutorial-banner-title">Account</span>
-                ${getAuthMarkup()}
-                <div id="authFeedback" class="feedback"></div>
-            </div>
-            <div class="intro-panel intro-actions-panel">
-                <div class="tutorial-actions">
-                    <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
-                    <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
-                    <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
-                    <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
+                <div class="intro-panel intro-actions-panel">
+                    <div class="tutorial-actions">
+                        <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
+                        <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
+                        <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
+                        <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -19,6 +19,8 @@
     --text: #fffdf6;
     --shadow: rgba(8, 20, 14, 0.24);
     --muted: rgba(255, 253, 246, 0.8);
+    --screen-gutter: clamp(18px, 2vw, 32px);
+    --panel-gap: clamp(12px, 1.5vw, 18px);
 }
 
 * {
@@ -67,18 +69,24 @@ body.level-three {
 
 .hud {
     position: absolute;
-    top: 18px;
+    top: var(--screen-gutter);
     left: 50%;
     transform: translateX(-50%);
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(10, minmax(78px, 1fr));
+    grid-template-columns: repeat(11, minmax(72px, 1fr));
     gap: 12px;
-    width: min(1180px, calc(100vw - 24px));
+    align-items: stretch;
+    width: min(1360px, calc(100vw - (var(--screen-gutter) * 2)));
     pointer-events: none;
 }
 
 .panel {
+    min-width: 0;
+    min-height: 76px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     padding: 14px 16px;
     border-radius: 18px;
     background: var(--panel);
@@ -533,10 +541,10 @@ body.level-three .level-banner {
 
 .instructions {
     position: absolute;
-    bottom: 22px;
-    left: 22px;
+    bottom: var(--screen-gutter);
+    left: var(--screen-gutter);
     z-index: 20;
-    max-width: 400px;
+    max-width: min(400px, calc(100vw - (var(--screen-gutter) * 2)));
     padding: 12px 14px;
     border-radius: 16px;
     background: rgba(22, 41, 30, 0.68);
@@ -551,7 +559,7 @@ body.level-three .level-banner {
     top: 118px;
     left: 50%;
     z-index: 21;
-    width: min(720px, calc(100vw - 28px));
+    width: min(720px, calc(100vw - (var(--screen-gutter) * 2)));
     transform: translateX(-50%);
     padding: 14px 18px;
     border-radius: 18px;
@@ -587,7 +595,7 @@ body.level-three .level-banner {
     top: 132px;
     left: 50%;
     z-index: 23;
-    width: min(580px, calc(100vw - 24px));
+    width: min(580px, calc(100vw - (var(--screen-gutter) * 2)));
     padding: 14px 18px;
     border-radius: 20px;
     background: linear-gradient(135deg, rgba(15, 28, 52, 0.88), rgba(38, 58, 92, 0.9));
@@ -616,7 +624,7 @@ body.level-three .level-banner {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: var(--screen-gutter);
     background: rgba(7, 18, 14, 0.5);
 }
 
@@ -638,7 +646,7 @@ body.level-three .level-banner {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding: 108px 20px 92px;
+    padding: 108px var(--screen-gutter) 92px;
     pointer-events: none;
 }
 
@@ -774,7 +782,7 @@ body.level-three .level-banner {
 }
 
 .overlay-card {
-    width: min(1040px, 100%);
+    width: min(1040px, calc(100vw - (var(--screen-gutter) * 2)));
     max-height: min(88vh, 920px);
     max-height: min(88dvh, 920px);
     overflow: auto;
@@ -875,6 +883,23 @@ body.level-three .level-banner {
     overflow: hidden;
 }
 
+.intro-layout {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(280px, 320px) minmax(280px, 1fr) minmax(260px, 320px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "hero spacer status"
+        "info spacer auth"
+        "info actions actions";
+    gap: var(--panel-gap);
+    padding: var(--screen-gutter);
+    align-items: start;
+    pointer-events: none;
+}
+
 .intro-map-shell .world-map-board {
     position: absolute;
     inset: 0;
@@ -883,51 +908,46 @@ body.level-three .level-banner {
 }
 
 .intro-panel {
-    position: absolute;
-    z-index: 2;
+    position: relative;
     padding: 14px 16px;
     border-radius: 18px;
     background: rgba(7, 17, 19, 0.72);
     border: 1px solid rgba(255, 247, 224, 0.12);
     box-shadow: 0 18px 32px rgba(0, 0, 0, 0.24);
     backdrop-filter: blur(10px);
+    width: auto;
+    max-width: 100%;
+    pointer-events: auto;
 }
 
 .intro-hero-panel {
-    top: 24px;
-    left: 24px;
-    width: min(292px, calc(100vw - 48px));
+    grid-area: hero;
 }
 
 .intro-status-panel {
-    top: 24px;
-    right: 24px;
-    width: min(188px, calc(100vw - 48px));
+    grid-area: status;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
 }
 
 .intro-info-panel {
-    left: 24px;
-    bottom: 24px;
-    width: min(278px, calc(100vw - 48px));
+    grid-area: info;
+    align-self: end;
 }
 
 .intro-auth-panel {
-    top: 102px;
-    right: 24px;
-    width: min(240px, calc(100vw - 48px));
-    max-height: calc(100vh - 230px);
+    grid-area: auth;
+    min-height: 0;
+    max-height: 100%;
     overflow: auto;
 }
 
 .intro-actions-panel {
-    left: 50%;
-    right: auto;
-    bottom: 24px;
-    width: min(540px, calc(100vw - 48px));
-    transform: translateX(-50%);
+    grid-area: actions;
+    align-self: end;
+    justify-self: center;
+    width: min(620px, 100%);
 }
 
 .intro-panel h1,
@@ -1607,10 +1627,10 @@ body.level-three .level-banner {
 
 .db-warning {
     position: absolute;
-    right: 20px;
-    bottom: 20px;
+    right: var(--screen-gutter);
+    bottom: var(--screen-gutter);
     z-index: 22;
-    max-width: 380px;
+    max-width: min(380px, calc(100vw - (var(--screen-gutter) * 2)));
     padding: 12px 14px;
     border-radius: 14px;
     color: #ffe7e1;
@@ -1621,9 +1641,9 @@ body.level-three .level-banner {
 .cookie-consent {
     position: fixed;
     left: 50%;
-    bottom: 24px;
+    bottom: var(--screen-gutter);
     z-index: 40;
-    width: min(680px, calc(100vw - 28px));
+    width: min(680px, calc(100vw - (var(--screen-gutter) * 2)));
     transform: translateX(-50%);
 }
 
@@ -1976,6 +1996,15 @@ body.cookie-banner-visible .db-warning {
         padding: 22px;
     }
 
+    .intro-layout {
+        display: block;
+        padding: 0;
+    }
+
+    .intro-panel {
+        position: absolute;
+    }
+
     .intro-hero-panel,
     .intro-status-panel,
     .intro-info-panel,
@@ -2009,7 +2038,10 @@ body.cookie-banner-visible .db-warning {
     }
 
     .intro-actions-panel {
+        left: 50%;
+        right: auto;
         bottom: 16px;
+        transform: translateX(-50%);
     }
 
     .world-map-board {
@@ -2098,6 +2130,15 @@ body.cookie-banner-visible .db-warning {
         position: relative;
         min-height: 44vh;
         height: 44vh;
+    }
+
+    .intro-layout {
+        position: relative;
+        inset: auto;
+        display: block;
+        min-height: 100%;
+        padding: 10px 0 14px;
+        pointer-events: auto;
     }
 
     .intro-panel {
