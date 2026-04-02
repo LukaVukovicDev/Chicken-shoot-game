@@ -11,6 +11,7 @@ function createDatabaseContext(string $databasePath): array
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+        $db->exec('PRAGMA busy_timeout = 5000');
 
         initializeDatabaseSchema($db);
     } catch (Throwable $exception) {
