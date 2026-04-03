@@ -940,7 +940,7 @@ body.level-three .level-banner {
     grid-area: auth;
     min-height: 0;
     max-height: 100%;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .intro-actions-panel {
@@ -1213,6 +1213,74 @@ body.level-three .level-banner {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+}
+
+.account-entry {
+    display: grid;
+    gap: 14px;
+}
+
+.account-entry-actions {
+    justify-content: flex-start;
+}
+
+.intro-account-panel {
+    align-self: start;
+}
+
+.auth-screen-card {
+    width: min(980px, calc(100vw - 32px));
+    max-height: min(760px, calc(100vh - 32px));
+    overflow: auto;
+}
+
+.auth-screen-card h1 {
+    margin-bottom: 10px;
+}
+
+.auth-screen-tabs {
+    display: inline-flex;
+    gap: 10px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-tab-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font: inherit;
+    font-weight: 700;
+    color: var(--text);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.auth-tab-button:hover {
+    transform: translateY(-1px);
+}
+
+.auth-tab-button.active {
+    color: #1c1a10;
+    background: linear-gradient(180deg, #ffe388, var(--accent));
+}
+
+.auth-screen-grid {
+    margin-top: 18px;
+    align-items: start;
+}
+
+.auth-card {
+    height: 100%;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.auth-card.active {
+    border-color: rgba(255, 203, 69, 0.5);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
 }
 
 .field-group {
@@ -1996,6 +2064,11 @@ body.cookie-banner-visible .db-warning {
         padding: 22px;
     }
 
+    .auth-screen-card {
+        width: min(100%, calc(100vw - 20px));
+        max-height: none;
+    }
+
     .intro-layout {
         display: block;
         padding: 0;
@@ -2028,7 +2101,7 @@ body.cookie-banner-visible .db-warning {
         top: 318px;
         right: 16px;
         width: min(380px, calc(100vw - 32px));
-        max-height: calc(100vh - 470px);
+        max-height: none;
     }
 
     .intro-info-panel {
@@ -2160,6 +2233,16 @@ body.cookie-banner-visible .db-warning {
     .intro-auth-panel {
         max-height: none;
         overflow: visible;
+    }
+
+    .account-entry-actions,
+    .auth-screen-tabs {
+        width: 100%;
+    }
+
+    .auth-screen-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
     }
 
     .intro-actions-panel {

@@ -967,27 +967,77 @@ function getAuthMarkup() {
         `;
     }
     return `
-        <div class="auth-grid">
-            <div class="card-section">
-                <h3>Login</h3>
-                <form id="loginForm">
-                    <div class="field-group"><label for="loginUsername">Username</label><input id="loginUsername" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" required></div>
-                    <div class="field-group"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" minlength="6" autocomplete="current-password" required></div>
-                    <button class="button" type="submit">Login</button>
-                </form>
+        <div class="account-entry">
+            <p>Open a dedicated account screen so login and register stay clean and readable on desktop.</p>
+            <div class="button-row account-entry-actions">
+                <button class="button" type="button" data-action="openLogin">Login</button>
+                <button class="button secondary" type="button" data-action="openRegister">Register</button>
             </div>
-            <div class="card-section">
-                <h3>Register</h3>
-                <form id="registerForm">
-                    <div class="field-group"><label for="registerUsername">Username</label><input id="registerUsername" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" required></div>
-                    <div class="field-group"><label for="registerNickname">Nickname</label><input id="registerNickname" name="nickname" type="text" minlength="3" maxlength="20" autocomplete="nickname" required></div>
-                    <div class="field-group"><label for="registerPassword">Password</label><input id="registerPassword" name="password" type="password" minlength="6" autocomplete="new-password" required></div>
-                    <button class="button" type="submit">Register</button>
-                </form>
-                <p class="auth-note">Nickname must be unique because it appears on the leaderboard.</p>
+            <p class="auth-note">Scores are saved automatically after you sign in.</p>
+        </div>
+    `;
+}
+
+function getAuthScreenMarkup(activeTab = "login", feedback = null) {
+    if (!appState.dbAvailable) {
+        return `
+            <div class="overlay-card auth-screen-card">
+                <span class="tutorial-banner-title">Chicken Shooting</span>
+                <h1>Account</h1>
+                <p>The account system is temporarily unavailable because SQLite is not ready.</p>
+                <div class="button-row button-row-spaced">
+                    <button class="button secondary" type="button" data-action="showIntro">Back to Main Menu</button>
+                </div>
+            </div>
+        `;
+    }
+
+    const normalizedTab = activeTab === "register" ? "register" : "login";
+
+    return `
+        <div class="overlay-card auth-screen-card">
+            <span class="tutorial-banner-title">Chicken Shooting</span>
+            <h1>Login and Register</h1>
+            <p>Enter the account area without compressing the map layout. The game name stays front and center here too.</p>
+            <div class="auth-screen-tabs" role="tablist" aria-label="Account forms">
+                <button class="auth-tab-button${normalizedTab === "login" ? " active" : ""}" type="button" data-action="switchAuthTab" data-auth-tab="login" aria-pressed="${normalizedTab === "login"}">Login</button>
+                <button class="auth-tab-button${normalizedTab === "register" ? " active" : ""}" type="button" data-action="switchAuthTab" data-auth-tab="register" aria-pressed="${normalizedTab === "register"}">Register</button>
+            </div>
+            ${buildFeedbackMarkup("authFeedback", feedback)}
+            <div class="auth-grid auth-screen-grid">
+                <div class="card-section auth-card${normalizedTab === "login" ? " active" : ""}">
+                    <h3>Login</h3>
+                    <p class="auth-note">Use your existing profile and continue tracking leaderboard rounds.</p>
+                    <form id="loginForm">
+                        <div class="field-group"><label for="loginUsername">Username</label><input id="loginUsername" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" required></div>
+                        <div class="field-group"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" minlength="6" autocomplete="current-password" required></div>
+                        <button class="button" type="submit">Login</button>
+                    </form>
+                </div>
+                <div class="card-section auth-card${normalizedTab === "register" ? " active" : ""}">
+                    <h3>Register</h3>
+                    <p class="auth-note">Create a username and a leaderboard nickname for Chicken Shooting.</p>
+                    <form id="registerForm">
+                        <div class="field-group"><label for="registerUsername">Username</label><input id="registerUsername" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" required></div>
+                        <div class="field-group"><label for="registerNickname">Nickname</label><input id="registerNickname" name="nickname" type="text" minlength="3" maxlength="20" autocomplete="nickname" required></div>
+                        <div class="field-group"><label for="registerPassword">Password</label><input id="registerPassword" name="password" type="password" minlength="6" autocomplete="new-password" required></div>
+                        <button class="button" type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+            <div class="button-row button-row-spaced">
+                <button class="button secondary" type="button" data-action="showIntro">Back to Main Menu</button>
             </div>
         </div>
     `;
+}
+
+function showAuthOverlay(activeTab = "login", feedback = null) {
+    centerCrosshair();
+    setOverlayMode("default");
+    overlay.innerHTML = getAuthScreenMarkup(activeTab, feedback);
+    overlay.classList.remove("hidden");
+    attachOverlayHandlers();
 }
 
 function showFeedback(response) {
@@ -1206,6 +1256,21 @@ function getSettingsOverlayMarkup(feedback = null) {
 
 function getIntroOverlayMarkup(showTutorialComplete = false) {
     const selectedConfig = getLevelConfig(selectedStartLevel);
+    const authPanelMarkup = appState.user
+        ? `
+            <div class="intro-panel intro-auth-panel">
+                <span class="tutorial-banner-title">Account</span>
+                ${getAuthMarkup()}
+                <div id="authFeedback" class="feedback"></div>
+            </div>
+        `
+        : `
+            <div class="intro-panel intro-auth-panel intro-account-panel">
+                <span class="tutorial-banner-title">Chicken Shooting</span>
+                <h2>Account</h2>
+                ${getAuthMarkup()}
+            </div>
+        `;
 
     return `
         <div class="intro-map-shell">
@@ -1244,11 +1309,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                         <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</li>
                     </ul>
                 </div>
-                <div class="intro-panel intro-auth-panel">
-                    <span class="tutorial-banner-title">Account</span>
-                    ${getAuthMarkup()}
-                    <div id="authFeedback" class="feedback"></div>
-                </div>
+                ${authPanelMarkup}
                 <div class="intro-panel intro-actions-panel">
                     <div class="tutorial-actions">
                         <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
@@ -1344,6 +1405,9 @@ function attachOverlayHandlers() {
     const profileForm = document.getElementById("profileForm");
     const passwordForm = document.getElementById("passwordForm");
     const cookieSettingsForm = document.getElementById("cookieSettingsForm");
+    const loginButton = overlay.querySelector('[data-action="openLogin"]');
+    const registerButton = overlay.querySelector('[data-action="openRegister"]');
+    const authTabButtons = overlay.querySelectorAll('[data-action="switchAuthTab"]');
     const openLeaderboardButton = overlay.querySelector('[data-action="openLeaderboard"]');
     const logoutButton = overlay.querySelector('[data-action="logout"]');
     const resumeButton = overlay.querySelector('[data-action="resumeGame"]');
@@ -1359,14 +1423,16 @@ function attachOverlayHandlers() {
         loginForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             const response = await postAction("login", new FormData(loginForm));
-            showFeedback(response);
-            if (response.ok) {
-                appState.user = response.user;
-                appState.leaderboard = response.leaderboard || appState.leaderboard;
-                appState.analytics = response.analytics || null;
-                updateHud();
-                showIntroOverlay();
+            if (!response.ok) {
+                showAuthOverlay("login", response);
+                return;
             }
+
+            appState.user = response.user;
+            appState.leaderboard = response.leaderboard || appState.leaderboard;
+            appState.analytics = response.analytics || null;
+            updateHud();
+            showIntroOverlay();
         });
     }
 
@@ -1374,14 +1440,16 @@ function attachOverlayHandlers() {
         registerForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             const response = await postAction("register", new FormData(registerForm));
-            showFeedback(response);
-            if (response.ok) {
-                appState.user = response.user;
-                appState.leaderboard = response.leaderboard || appState.leaderboard;
-                appState.analytics = response.analytics || null;
-                updateHud();
-                showIntroOverlay();
+            if (!response.ok) {
+                showAuthOverlay("register", response);
+                return;
             }
+
+            appState.user = response.user;
+            appState.leaderboard = response.leaderboard || appState.leaderboard;
+            appState.analytics = response.analytics || null;
+            updateHud();
+            showIntroOverlay();
         });
     }
 
@@ -1443,6 +1511,11 @@ function attachOverlayHandlers() {
         });
     }
 
+    loginButton?.addEventListener("click", () => showAuthOverlay("login"));
+    registerButton?.addEventListener("click", () => showAuthOverlay("register"));
+    authTabButtons.forEach((button) => button.addEventListener("click", () => {
+        showAuthOverlay(button.dataset.authTab || "login");
+    }));
     openLeaderboardButton?.addEventListener("click", showLeaderboardOverlay);
     resumeButton?.addEventListener("click", resumeGameFromPause);
     startButtons.forEach((button) => button.addEventListener("click", () => startGame()));
