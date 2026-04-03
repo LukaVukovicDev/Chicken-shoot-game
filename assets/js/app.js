@@ -1066,6 +1066,16 @@ function buildFeedbackMarkup(id, feedback = null) {
     return `<div id="${escapeHtml(id)}" class="${className}">${message}</div>`;
 }
 
+function buildOverlayHeader(title, description = "", eyebrow = "Chicken Shooting") {
+    return `
+        <div class="overlay-header">
+            <span class="tutorial-banner-title">${escapeHtml(eyebrow)}</span>
+            <h1>${escapeHtml(title)}</h1>
+            ${description ? `<p class="overlay-header-copy">${escapeHtml(description)}</p>` : ""}
+        </div>
+    `;
+}
+
 async function postAction(action, formData) {
     if (!appState.dbAvailable) {
         return { ok: false, message: "Database is not available." };
@@ -1157,8 +1167,7 @@ function getSettingsOverlayMarkup(feedback = null) {
 
     return `
         <div class="overlay-card">
-            <h2>User Settings</h2>
-            <p>Ovde mozes da upravljas profilom i privatnoscu bez plutajuceg dugmeta koje prekriva ekran.</p>
+            ${buildOverlayHeader("User Settings", "Manage your profile, password and cookie preferences without covering the whole game flow.", "Chicken Shooting")}
             ${buildFeedbackMarkup("settingsFeedback", feedback)}
             <div class="settings-layout">
                 <div class="settings-stack">
@@ -1340,8 +1349,7 @@ function showLeaderboardOverlay() {
     setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
-            <h2>Leaderboard</h2>
-            <p>Best score for each registered nickname.</p>
+            ${buildOverlayHeader("Leaderboard", "Best score for each registered nickname and a quick look at player progress.", "Chicken Shooting")}
             ${buildLeaderboardMarkup()}
             ${buildAnalyticsMarkup()}
             <div class="button-row button-row-spaced">
@@ -1374,8 +1382,7 @@ function openPauseMenu() {
     setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
-            <h2>Game Menu</h2>
-            <p>The round is paused. Choose what you want to do next.</p>
+            ${buildOverlayHeader("Game Menu", "The round is paused. Pick the next step and jump back into Chicken Shooting when you're ready.", "Chicken Shooting")}
             <ul class="menu-list">
                 <li>Current level: <strong>${currentLevel}</strong></li>
                 <li>Current score: <strong>${score}</strong></li>
@@ -1881,7 +1888,7 @@ async function endGame(endedEarly = false) {
     setOverlayMode("default");
     overlay.innerHTML = `
         <div class="overlay-card">
-            <h2>${endedEarly ? "Game Ended" : "Time Up"}</h2>
+            ${buildOverlayHeader(endedEarly ? "Game Ended" : "Time Up", "Round summary, performance stats and the fastest way back into the hunt.", "Chicken Shooting")}
             <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
             <p><strong>Reached level:</strong> ${currentLevel}</p>
             <p><strong>Unlocked routes:</strong> ${maxUnlockedLevel} / ${maxLevel}</p>
