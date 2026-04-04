@@ -935,6 +935,9 @@ body.level-three .level-banner {
 
 .intro-hero-panel {
     grid-area: hero;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .intro-status-panel {
@@ -976,6 +979,12 @@ body.level-three .level-banner {
 
 .intro-panel h1 {
     margin-bottom: 10px;
+}
+
+.intro-hero-panel .tutorial-banner-title,
+.intro-hero-panel h1,
+.intro-hero-panel p {
+    margin: 0;
 }
 
 .intro-status-panel .intro-stat {
