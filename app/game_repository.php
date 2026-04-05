@@ -25,6 +25,37 @@ function fetchLeaderboard(?PDO $db, int $limit = 10): array
     return $statement->fetchAll() ?: [];
 }
 
+function fetchRoutes(?PDO $db): array
+{
+    if (!$db) {
+        return [];
+    }
+
+    $statement = $db->query(
+        'SELECT
+            id,
+            name,
+            map_title,
+            map_copy,
+            locked_copy,
+            status_text,
+            banner_title,
+            banner_copy,
+            start_count,
+            spawn_limit,
+            spawn_every_ms,
+            speed_multiplier,
+            chicken_class,
+            accessory,
+            unlock_score
+        FROM routes
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC'
+    );
+
+    return $statement->fetchAll() ?: [];
+}
+
 function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
 {
     if (!$db || !$user) {

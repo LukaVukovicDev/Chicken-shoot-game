@@ -11,7 +11,7 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
 
     ensureAjaxRequest();
 
-    if ($action !== 'leaderboard') {
+    if (!in_array($action, ['leaderboard', 'routes'], true)) {
         ensurePostRequest();
         validateSameOriginRequest();
         requireValidCsrfToken();
@@ -31,6 +31,14 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
     if ($action === 'leaderboard') {
         $user = getSessionUser($database);
         jsonResponse(buildAppPayload($database, $user));
+    }
+
+    if ($action === 'routes') {
+        jsonResponse([
+            'ok' => true,
+            'routes' => fetchRoutes($database),
+            'csrfToken' => getCsrfToken(),
+        ]);
     }
 
     switch ($action) {

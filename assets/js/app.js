@@ -11,6 +11,7 @@ const appState = Object.assign({
     user: null,
     leaderboard: [],
     analytics: null,
+    routes: [],
     dbError: null
 }, parseAppState());
 let csrfToken = document.body.dataset.csrfToken || "";
@@ -42,17 +43,6 @@ const cookieSettingsButton = document.getElementById("cookieSettingsButton");
 
 const totalTime = 45;
 const magSize = 6;
-const spawnLimit = 8;
-const spawnEveryMs = 900;
-const levelTwoScoreThreshold = 800;
-const levelTwoSpawnLimit = 10;
-const levelTwoSpawnEveryMs = 760;
-const levelTwoSpeedMultiplier = 1.18;
-const levelThreeScoreThreshold = 1500;
-const levelThreeSpawnLimit = 12;
-const levelThreeSpawnEveryMs = 620;
-const levelThreeSpeedMultiplier = 1.32;
-const maxLevel = 3;
 const bestScoreStorageKey = "chicken-shooting-best";
 const levelUnlockStorageKey = "chicken-shooting-unlocked-level";
 const cookieConsentStorageKey = "chicken-shooting-cookie-consent";
@@ -73,67 +63,19 @@ const chickenTypes = [
     { label: "Rose Chicken", colors: ["#f2a49b", "#e88374", "#f3b74e"], speedMin: 230, speedMax: 280, pointsMin: 38, pointsMax: 46 },
     { label: "Blue Chicken", colors: ["#d9eef9", "#afdae9", "#ef9b29"], speedMin: 275, speedMax: 340, pointsMin: 46, pointsMax: 56 }
 ];
-const levelConfigs = {
-    1: {
-        id: 1,
-        name: "Level 1",
-        mapTitle: "Farm Run",
-        mapCopy: "Classic meadow warm-up with the standard flock.",
-        lockedCopy: "",
-        status: "Round started. Aim for the quick birds and push past 800 points for the snowy second level.",
-        bannerTitle: "Level 1",
-        bannerCopy: "The hunt begins across the open meadow.",
-        startCount: 4,
-        spawnLimit,
-        spawnEveryMs,
-        speedMultiplier: 1,
-        chickenClass: "",
-        accessory: "none"
-    },
-    2: {
-        id: 2,
-        name: "Level 2",
-        mapTitle: "Russian Ridge",
-        mapCopy: "Snowy mountain terrain with ushanka-wearing chickens.",
-        lockedCopy: "Unlock by pushing beyond 800 score.",
-        status: "Level 2 started. Snowy ridge unlocked and the chickens are moving faster.",
-        bannerTitle: "Level 2",
-        bannerCopy: "Ulazis u ruski planinski teren. Tajmer je vracen na 45 sekundi, a kokoske sada nose zimske kape.",
-        startCount: 5,
-        spawnLimit: levelTwoSpawnLimit,
-        spawnEveryMs: levelTwoSpawnEveryMs,
-        speedMultiplier: levelTwoSpeedMultiplier,
-        chickenClass: "winter-chicken",
-        accessory: "winter"
-    },
-    3: {
-        id: 3,
-        name: "Level 3",
-        mapTitle: "Island Sprint",
-        mapCopy: "A tropical island chase with bright pink flower leis and hotter pace.",
-        lockedCopy: "Unlock by pushing beyond 1500 score.",
-        status: "Level 3 started. Tropical island unlocked and the chickens are darting through the sea breeze.",
-        bannerTitle: "Level 3",
-        bannerCopy: "Stizes na tropsko ostrvo. Tajmer je vracen na 45 sekundi, a kokoske sada nose havajski vencic.",
-        startCount: 6,
-        spawnLimit: levelThreeSpawnLimit,
-        spawnEveryMs: levelThreeSpawnEveryMs,
-        speedMultiplier: levelThreeSpeedMultiplier,
-        chickenClass: "tropical-chicken",
-        accessory: "lei"
-    }
-};
+let levelConfigs = {};
+let maxLevel = 1;
 const mapPins = [
-    { label: 2, x: 180, y: 160, targetLevel: 2, title: "Russian Ridge", primary: true },
-    { label: 3, x: 280, y: 150, targetLevel: 3, title: "Island Sprint", primary: true },
-    { label: 1, x: 480, y: 130, targetLevel: 1, title: "Farm Run", primary: true },
-    { label: 4, x: 320, y: 350, targetLevel: 1, title: "Farm Run", primary: false },
-    { label: 6, x: 330, y: 420, targetLevel: 1, title: "Farm Run", primary: false },
-    { label: 8, x: 520, y: 330, targetLevel: 1, title: "Farm Run", primary: false },
-    { label: 9, x: 650, y: 250, targetLevel: 3, title: "Island Sprint", primary: false },
-    { label: 10, x: 820, y: 380, targetLevel: 3, title: "Island Sprint", primary: false },
-    { label: 11, x: 880, y: 360, targetLevel: 3, title: "Island Sprint", primary: false },
-    { label: 13, x: 850, y: 150, targetLevel: 2, title: "Russian Ridge", primary: false }
+    { label: 2, x: 180, y: 160, targetLevel: 2, primary: true },
+    { label: 3, x: 280, y: 150, targetLevel: 3, primary: true },
+    { label: 1, x: 480, y: 130, targetLevel: 1, primary: true },
+    { label: 4, x: 320, y: 350, targetLevel: 1, primary: false },
+    { label: 6, x: 330, y: 420, targetLevel: 1, primary: false },
+    { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
+    { label: 9, x: 650, y: 250, targetLevel: 3, primary: false },
+    { label: 10, x: 820, y: 380, targetLevel: 3, primary: false },
+    { label: 11, x: 880, y: 360, targetLevel: 3, primary: false },
+    { label: 13, x: 850, y: 150, targetLevel: 2, primary: false }
 ];
 const viewport = {
     width: window.innerWidth,
@@ -180,7 +122,49 @@ const tutorialSteps = [
 
 bestEl.textContent = bestScore;
 playerNameEl.textContent = appState.user?.nickname || "Guest";
-bootstrapLevelProgress();
+
+function getOrderedLevelConfigs() {
+    return Object.values(levelConfigs).sort((first, second) => first.id - second.id);
+}
+
+function mapRouteToLevelConfig(route) {
+    return {
+        id: Number(route.id),
+        name: String(route.name || `Level ${route.id}`),
+        mapTitle: String(route.map_title || route.mapTitle || ""),
+        mapCopy: String(route.map_copy || route.mapCopy || ""),
+        lockedCopy: String(route.locked_copy || route.lockedCopy || ""),
+        status: String(route.status_text || route.status || ""),
+        bannerTitle: String(route.banner_title || route.bannerTitle || ""),
+        bannerCopy: String(route.banner_copy || route.bannerCopy || ""),
+        startCount: Number(route.start_count || route.startCount || 0),
+        spawnLimit: Number(route.spawn_limit || route.spawnLimit || 0),
+        spawnEveryMs: Number(route.spawn_every_ms || route.spawnEveryMs || 0),
+        speedMultiplier: Number(route.speed_multiplier || route.speedMultiplier || 1),
+        chickenClass: String(route.chicken_class || route.chickenClass || ""),
+        accessory: String(route.accessory || "none"),
+        unlockScore: Number(route.unlock_score || route.unlockScore || 0)
+    };
+}
+
+function setRouteConfigs(routes) {
+    const nextConfigs = {};
+
+    routes
+        .map(mapRouteToLevelConfig)
+        .sort((first, second) => first.id - second.id)
+        .forEach((route) => {
+            nextConfigs[route.id] = route;
+        });
+
+    levelConfigs = nextConfigs;
+    appState.routes = getOrderedLevelConfigs();
+    maxLevel = Math.max(1, ...appState.routes.map((route) => route.id));
+}
+
+function getDefaultLevelConfig() {
+    return levelConfigs[1] || getOrderedLevelConfigs()[0] || null;
+}
 
 function calculateAccuracy(clicksValue, hitsValue) {
     if (clicksValue <= 0) {
@@ -336,13 +320,9 @@ function syncSecurityState(response) {
 }
 
 function computeUnlockedLevelFromScore(scoreValue) {
-    if (scoreValue > levelThreeScoreThreshold) {
-        return 3;
-    }
-    if (scoreValue > levelTwoScoreThreshold) {
-        return 2;
-    }
-    return 1;
+    return getOrderedLevelConfigs().reduce((highestUnlocked, config) => (
+        scoreValue > config.unlockScore ? Math.max(highestUnlocked, config.id) : highestUnlocked
+    ), 1);
 }
 
 function bootstrapLevelProgress() {
@@ -423,7 +403,7 @@ function saveCookiePreferences(functionalEnabled, options = {}) {
 }
 
 function getLevelConfig(level = currentLevel) {
-    return levelConfigs[level] || levelConfigs[1];
+    return levelConfigs[level] || getDefaultLevelConfig();
 }
 
 function unlockLevel(level) {
@@ -594,15 +574,10 @@ function maybeAdvanceToNextLevel() {
         return false;
     }
 
-    if (currentLevel === 1 && score > levelTwoScoreThreshold) {
-        unlockLevel(2);
-        activateLevel(2);
-        return true;
-    }
-
-    if (currentLevel === 2 && score > levelThreeScoreThreshold) {
-        unlockLevel(3);
-        activateLevel(3);
+    const nextLevelConfig = getLevelConfig(currentLevel + 1);
+    if (nextLevelConfig && nextLevelConfig.id !== currentLevel && score > nextLevelConfig.unlockScore) {
+        unlockLevel(nextLevelConfig.id);
+        activateLevel(nextLevelConfig.id);
         return true;
     }
 
@@ -1126,6 +1101,36 @@ async function loadLeaderboard() {
     }
 }
 
+async function loadRoutes() {
+    if (!appState.dbAvailable) {
+        return false;
+    }
+
+    try {
+        const response = await fetch("?action=routes", {
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+        const data = await response.json();
+        syncSecurityState(data);
+        if (!data.ok || !Array.isArray(data.routes) || data.routes.length === 0) {
+            setStatus("Could not load routes right now.");
+            return false;
+        }
+
+        setRouteConfigs(data.routes);
+        bootstrapLevelProgress();
+        return true;
+    } catch (error) {
+        setStatus("Could not load routes right now.");
+        return false;
+    }
+}
+
 function buildLevelMapMarkup() {
     return `
         <div class="world-map-board" role="group" aria-label="World map with level pins">
@@ -1141,7 +1146,7 @@ function buildLevelMapMarkup() {
                     <a
                         class="svg-pin-link"
                         href="${escapeHtml(buildMapPinHref(pin))}"${buildMapPinExtraAttributes(pin)}
-                        aria-label="Open ${escapeHtml(pin.title)} from SVG pin ${pin.label}"
+                        aria-label="Open ${escapeHtml(getLevelConfig(pin.targetLevel)?.mapTitle || `Level ${pin.targetLevel}`)} from SVG pin ${pin.label}"
                     >
                         <g class="svg-pin-base${pin.primary ? " primary" : ""}" transform="translate(${pin.x}, ${pin.y})">
                             <circle r="15"/>
@@ -1265,6 +1270,7 @@ function getSettingsOverlayMarkup(feedback = null) {
 
 function getIntroOverlayMarkup(showTutorialComplete = false) {
     const selectedConfig = getLevelConfig(selectedStartLevel);
+    const selectedRouteTitle = selectedConfig?.mapTitle || "Route unavailable";
     const authPanelMarkup = appState.user
         ? `
             <div class="intro-panel intro-auth-panel">
@@ -1295,7 +1301,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                 <div class="intro-panel intro-status-panel">
                     <div class="intro-stat">
                         <span class="intro-stat-label">Selected Route</span>
-                        <strong>${escapeHtml(selectedConfig.mapTitle)}</strong>
+                        <strong>${escapeHtml(selectedRouteTitle)}</strong>
                     </div>
                     <div class="intro-stat">
                         <span class="intro-stat-label">Best Local Score</span>
@@ -1322,7 +1328,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                 <div class="intro-panel intro-actions-panel">
                     <div class="tutorial-actions">
                         <button class="button secondary" type="button" data-action="startTutorial">Start tutorial</button>
-                        <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedConfig.mapTitle)}</button>
+                        <button class="button" type="button" data-action="startGame">Enter ${escapeHtml(selectedRouteTitle)}</button>
                         <button class="button secondary" type="button" data-action="openSettings">User Settings</button>
                         <button class="button secondary" type="button" data-action="openLeaderboard">View Leaderboard</button>
                     </div>
@@ -2053,14 +2059,32 @@ applyLevelTheme();
 updateCookieUi();
 queueCrosshairRender();
 updateHud();
-const requestedLevelFromUrl = getRequestedLevelFromUrl();
-if (requestedLevelFromUrl !== null) {
-    selectStartLevel(requestedLevelFromUrl, { render: false, force: true });
-    clearRequestedLevelFromUrl();
-    startGame(requestedLevelFromUrl);
-} else {
-    showIntroOverlay();
+
+async function initApp() {
+    const routesLoaded = await loadRoutes();
+    const requestedLevelFromUrl = getRequestedLevelFromUrl();
+
+    if (routesLoaded) {
+        if (requestedLevelFromUrl !== null) {
+            selectStartLevel(requestedLevelFromUrl, { render: false, force: true });
+            clearRequestedLevelFromUrl();
+            startGame(requestedLevelFromUrl);
+        } else {
+            showIntroOverlay();
+        }
+    } else {
+        overlay.classList.remove("hidden");
+        overlay.innerHTML = `
+            <div class="overlay-card">
+                ${buildOverlayHeader("Routes Unavailable", "The route list could not be loaded from the database right now.", "Chicken Shooting")}
+                <p class="overlay-header-copy">Try refreshing the page after the backend becomes available.</p>
+            </div>
+        `;
+    }
+
+    loadLeaderboard();
 }
-loadLeaderboard();
+
+initApp();
 
 
