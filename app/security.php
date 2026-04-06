@@ -42,6 +42,14 @@ function isHttpsRequest(): bool
         return true;
     }
 
+    $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+    if ($forwardedProto !== '') {
+        $firstForwardedProto = strtok($forwardedProto, ',');
+        if ($firstForwardedProto !== false && trim($firstForwardedProto) === 'https') {
+            return true;
+        }
+    }
+
     return (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
 }
 
@@ -181,7 +189,7 @@ function requireValidCsrfToken(): void
 
 function isAllowedOrigin(string $url): bool
 {
-    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $host = getRequestHost();
     if ($host === '') {
         return false;
     }
@@ -194,13 +202,46 @@ function isAllowedOrigin(string $url): bool
     $scheme = strtolower((string) ($parts['scheme'] ?? ''));
     $requestScheme = isHttpsRequest() ? 'https' : 'http';
     $originHost = strtolower((string) ($parts['host'] ?? ''));
-    $requestHost = strtolower((string) preg_replace('/:\d+$/', '', $host));
+    $requestHost = normalizeHostName($host);
     $originPort = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
-    $requestPort = (int) (parse_url($requestScheme . '://' . $host, PHP_URL_PORT) ?? ($requestScheme === 'https' ? 443 : 80));
+    $requestPort = getRequestPort($requestScheme, $host);
 
     return $scheme === $requestScheme
         && $originHost === $requestHost
         && $originPort === $requestPort;
+}
+
+function getRequestHost(): string
+{
+    $forwardedHost = trim((string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+    if ($forwardedHost !== '') {
+        $firstForwardedHost = strtok($forwardedHost, ',');
+        if ($firstForwardedHost !== false) {
+            return trim($firstForwardedHost);
+        }
+    }
+
+    return trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+}
+
+function normalizeHostName(string $host): string
+{
+    return strtolower((string) preg_replace('/:\d+$/', '', trim($host)));
+}
+
+function getRequestPort(string $scheme, string $host): int
+{
+    $forwardedPort = trim((string) ($_SERVER['HTTP_X_FORWARDED_PORT'] ?? ''));
+    if ($forwardedPort !== '' && ctype_digit($forwardedPort)) {
+        return (int) $forwardedPort;
+    }
+
+    $parsedPort = parse_url($scheme . '://' . $host, PHP_URL_PORT);
+    if (is_int($parsedPort)) {
+        return $parsedPort;
+    }
+
+    return $scheme === 'https' ? 443 : 80;
 }
 
 function getClientIpAddress(): string
