@@ -30,6 +30,7 @@ function bootstrapSecurity(): void
         session_start();
     }
 
+    enforceSessionFingerprint();
     enforceSessionTimeout();
     maybeRegenerateSessionId();
     ensureCsrfToken();
@@ -90,6 +91,7 @@ function rotateSessionSecurity(): void
     session_regenerate_id(true);
     $_SESSION['session_regenerated_at'] = time();
     $_SESSION['last_activity_at'] = time();
+    $_SESSION['client_fingerprint'] = buildClientFingerprint();
     ensureCsrfToken(true);
 }
 
@@ -97,6 +99,27 @@ function resetSessionToGuest(): void
 {
     $_SESSION = [];
     rotateSessionSecurity();
+}
+
+function enforceSessionFingerprint(): void
+{
+    $currentFingerprint = buildClientFingerprint();
+    $storedFingerprint = (string) ($_SESSION['client_fingerprint'] ?? '');
+
+    if ($storedFingerprint === '') {
+        $_SESSION['client_fingerprint'] = $currentFingerprint;
+        return;
+    }
+
+    if (!hash_equals($storedFingerprint, $currentFingerprint)) {
+        logSecurityEvent('session_fingerprint_mismatch', [
+            'ip' => getClientIpAddress(),
+            'request_uri' => getSanitizedRequestUri(),
+            'user_agent_hash' => hash('sha256', getUserAgentSignature()),
+        ]);
+        $_SESSION = [];
+        rotateSessionSecurity();
+    }
 }
 
 function enforceSessionTimeout(): void
@@ -247,6 +270,50 @@ function getRequestPort(string $scheme, string $host): int
 function getClientIpAddress(): string
 {
     return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+}
+
+function buildClientFingerprint(): string
+{
+    return hash('sha256', implode('|', [
+        getUserAgentSignature(),
+        getClientNetworkSegment(),
+        isHttpsRequest() ? 'https' : 'http',
+    ]));
+}
+
+function getUserAgentSignature(): string
+{
+    $userAgent = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? 'unknown'));
+    return $userAgent !== '' ? $userAgent : 'unknown';
+}
+
+function getClientNetworkSegment(): string
+{
+    $ipAddress = getClientIpAddress();
+
+    if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        $segments = explode('.', $ipAddress);
+        return implode('.', array_slice($segments, 0, 3));
+    }
+
+    if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+        $segments = explode(':', $ipAddress);
+        return implode(':', array_slice($segments, 0, 4));
+    }
+
+    return 'unknown';
+}
+
+function getSanitizedRequestUri(): string
+{
+    $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+    $path = (string) parse_url($requestUri, PHP_URL_PATH);
+
+    if ($path === '') {
+        return '/';
+    }
+
+    return preg_replace('/[^a-zA-Z0-9_\-\/.]/', '', $path) ?: '/';
 }
 
 function logSecurityEvent(string $event, array $context = []): void
