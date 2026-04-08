@@ -7,11 +7,11 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         return;
     }
 
-    $action = (string) $_GET['action'];
+    $action = readRequestedAction();
 
     ensureAjaxRequest();
 
-    if (!in_array($action, ['leaderboard', 'routes'], true)) {
+    if (!isPublicAction($action)) {
         ensurePostRequest();
         validateSameOriginRequest();
         requireValidCsrfToken();
@@ -41,28 +41,7 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         ]);
     }
 
-    switch ($action) {
-        case 'register':
-            handleRegisterAction($database);
-            break;
-        case 'login':
-            handleLoginAction($database);
-            break;
-        case 'logout':
-            handleLogoutAction($database);
-            break;
-        case 'update_profile':
-            handleUpdateProfileAction($database);
-            break;
-        case 'change_password':
-            handleChangePasswordAction($database);
-            break;
-        case 'save_score':
-            handleSaveScoreAction($database);
-            break;
-        default:
-            jsonResponse(['ok' => false, 'message' => 'Unknown action.'], 404);
-    }
+    dispatchProtectedAction($action, $database);
 }
 
 function requireDatabase(?PDO $db): PDO
@@ -79,6 +58,50 @@ function ensurePostRequest(): void
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
         jsonResponse(['ok' => false, 'message' => 'Invalid request method.'], 405);
     }
+}
+
+function readRequestedAction(): string
+{
+    $action = trim((string) ($_GET['action'] ?? ''));
+
+    if ($action === '' || !preg_match('/^[a-z_]{3,32}$/', $action)) {
+        logSecurityEvent('request_rejected_invalid_action', [
+            'action' => $action,
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Invalid action.'], 400);
+    }
+
+    return $action;
+}
+
+function isPublicAction(string $action): bool
+{
+    return in_array($action, ['leaderboard', 'routes'], true);
+}
+
+function dispatchProtectedAction(string $action, PDO $db): never
+{
+    $handlers = [
+        'register' => 'handleRegisterAction',
+        'login' => 'handleLoginAction',
+        'logout' => 'handleLogoutAction',
+        'update_profile' => 'handleUpdateProfileAction',
+        'change_password' => 'handleChangePasswordAction',
+        'save_score' => 'handleSaveScoreAction',
+    ];
+
+    $handler = $handlers[$action] ?? null;
+
+    if ($handler === null) {
+        logSecurityEvent('request_rejected_unknown_action', [
+            'action' => $action,
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Unknown action.'], 404);
+    }
+
+    $handler($db);
 }
 
 function buildAppPayload(PDO $db, ?array $user): array
