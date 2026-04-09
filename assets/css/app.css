@@ -58,6 +58,13 @@ body.level-three {
         linear-gradient(180deg, var(--tropical-sky-top) 0%, var(--tropical-sky-bottom) 40%, #70dced 40%, var(--sea-bottom) 68%, var(--sand-top) 68%, var(--sand-bottom) 100%);
 }
 
+body.level-four {
+    background:
+        radial-gradient(circle at 50% 14%, rgba(255, 242, 158, 0.24), transparent 18%),
+        radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.12), transparent 16%),
+        linear-gradient(180deg, #85b7db 0%, #587d9c 32%, #46525f 32%, #262e36 58%, #1d2228 100%);
+}
+
 .game-shell {
     position: relative;
     width: 100vw;
@@ -201,6 +208,124 @@ body.level-two .mountain-scene {
 body.level-three .tropical-scene {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+}
+
+.racetrack-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+body.level-four .racetrack-scene {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+.track-horizon {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 28vh;
+    height: 14vh;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 35%),
+        linear-gradient(180deg, #576779 0%, #37414b 100%);
+}
+
+.track-stands {
+    position: absolute;
+    bottom: 35vh;
+    width: 24vw;
+    min-width: 190px;
+    height: 14vh;
+    background:
+        repeating-linear-gradient(180deg, rgba(184, 198, 212, 0.9) 0 8px, rgba(78, 89, 101, 0.95) 8px 16px),
+        linear-gradient(180deg, #8b98a6 0%, #535f6c 100%);
+    clip-path: polygon(0 100%, 0 24%, 100% 0, 100% 100%);
+    box-shadow: 0 18px 28px rgba(7, 13, 20, 0.25);
+}
+
+.track-stands-left {
+    left: -2vw;
+}
+
+.track-stands-right {
+    right: -2vw;
+    transform: scaleX(-1);
+}
+
+.track-light-rig {
+    position: absolute;
+    left: 50%;
+    bottom: 38vh;
+    width: min(34vw, 320px);
+    height: 12px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #d9e2ea 0%, #f8fbff 50%, #d9e2ea 100%);
+    box-shadow: 0 0 0 4px rgba(45, 52, 60, 0.55);
+}
+
+.track-light-rig::before,
+.track-light-rig::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    width: 12px;
+    height: 72px;
+    background: linear-gradient(180deg, #8d9aa8 0%, #4c5661 100%);
+}
+
+.track-light-rig::before {
+    left: 10px;
+}
+
+.track-light-rig::after {
+    right: 10px;
+}
+
+.track-curb {
+    position: absolute;
+    bottom: 0;
+    width: 11vw;
+    min-width: 82px;
+    height: 30vh;
+    background: repeating-linear-gradient(180deg, #fff5ef 0 18px, #d93e36 18px 36px);
+    opacity: 0.95;
+}
+
+.track-curb-left {
+    left: 0;
+    clip-path: polygon(0 100%, 0 0, 100% 28%, 74% 100%);
+}
+
+.track-curb-right {
+    right: 0;
+    clip-path: polygon(26% 100%, 0 28%, 100% 0, 100% 100%);
+}
+
+.track-lane {
+    position: absolute;
+    bottom: 10vh;
+    width: 7px;
+    background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0 16px, transparent 16px 30px);
+    transform-origin: bottom center;
+    opacity: 0.72;
+}
+
+.track-lane-one {
+    left: 42%;
+    height: 28vh;
+    transform: skewX(8deg);
+}
+
+.track-lane-two {
+    left: 57%;
+    height: 28vh;
+    transform: skewX(-8deg);
 }
 
 .sea-horizon {
@@ -533,10 +658,39 @@ body.level-three .ground {
     border-top: 2px solid rgba(255, 248, 225, 0.74);
 }
 
+body.level-four .sun {
+    top: 72px;
+    right: 8vw;
+    width: 96px;
+    height: 96px;
+    background: radial-gradient(circle, rgba(255, 247, 198, 0.95) 0%, rgba(255, 206, 99, 0.9) 42%, rgba(255, 151, 77, 0.28) 64%, transparent 72%);
+    box-shadow: 0 0 38px rgba(255, 174, 83, 0.22);
+}
+
+body.level-four .cloud,
+body.level-four .cloud::before,
+body.level-four .cloud::after {
+    background: rgba(228, 236, 244, 0.5);
+}
+
+body.level-four .ground {
+    height: 30vh;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 14%),
+        linear-gradient(180deg, #3f464e 0%, #2a3037 42%, #1b2026 100%);
+    border-top: 2px solid rgba(208, 217, 228, 0.3);
+}
+
 body.level-three .level-banner {
     background: linear-gradient(135deg, rgba(124, 61, 33, 0.9), rgba(207, 119, 63, 0.9));
     border-color: rgba(255, 219, 173, 0.42);
     box-shadow: 0 18px 34px rgba(76, 38, 19, 0.3);
+}
+
+body.level-four .level-banner {
+    background: linear-gradient(135deg, rgba(42, 48, 58, 0.92), rgba(105, 41, 27, 0.92));
+    border-color: rgba(255, 208, 160, 0.34);
+    box-shadow: 0 18px 34px rgba(18, 22, 28, 0.34);
 }
 
 .instructions {

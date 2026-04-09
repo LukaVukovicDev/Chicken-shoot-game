@@ -66,6 +66,16 @@ $initialAppState = [
             <div class="wave wave-two"></div>
             <div class="wave wave-three"></div>
         </div>
+        <div class="racetrack-scene" aria-hidden="true">
+            <div class="track-horizon"></div>
+            <div class="track-stands track-stands-left"></div>
+            <div class="track-stands track-stands-right"></div>
+            <div class="track-light-rig"></div>
+            <div class="track-curb track-curb-left"></div>
+            <div class="track-curb track-curb-right"></div>
+            <div class="track-lane track-lane-one"></div>
+            <div class="track-lane track-lane-two"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>

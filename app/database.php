@@ -104,13 +104,8 @@ function ensureRoutesTable(PDO $db): void
         )'
     );
 
-    $routeCount = (int) $db->query('SELECT COUNT(*) FROM routes')->fetchColumn();
-    if ($routeCount > 0) {
-        return;
-    }
-
     $insert = $db->prepare(
-        'INSERT INTO routes (
+        'INSERT OR IGNORE INTO routes (
             id,
             name,
             map_title,
@@ -201,6 +196,24 @@ function ensureRoutesTable(PDO $db): void
             'accessory' => 'lei',
             'unlock_score' => 1500,
             'display_order' => 3,
+        ],
+        [
+            'id' => 4,
+            'name' => 'Level 4',
+            'map_title' => 'Racing Circuit',
+            'map_copy' => 'A high-speed race track with hot asphalt, curbs and the fastest flock yet.',
+            'locked_copy' => 'Unlock by pushing beyond 2300 score.',
+            'status_text' => 'Level 4 started. The racing circuit is live and the chickens are blazing across the track.',
+            'banner_title' => 'Level 4',
+            'banner_copy' => 'Ulazis na trkacku stazu. Podloga je vrela, tempo je najbrzi do sada, a meta ima sve manje vremena na ekranu.',
+            'start_count' => 7,
+            'spawn_limit' => 14,
+            'spawn_every_ms' => 520,
+            'speed_multiplier' => 1.5,
+            'chicken_class' => 'race-chicken',
+            'accessory' => 'none',
+            'unlock_score' => 2300,
+            'display_order' => 4,
         ],
     ];
 

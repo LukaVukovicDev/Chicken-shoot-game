@@ -69,7 +69,7 @@ const mapPins = [
     { label: 2, x: 180, y: 160, targetLevel: 2, primary: true },
     { label: 3, x: 280, y: 150, targetLevel: 3, primary: true },
     { label: 1, x: 480, y: 130, targetLevel: 1, primary: true },
-    { label: 4, x: 320, y: 350, targetLevel: 1, primary: false },
+    { label: 4, x: 320, y: 350, targetLevel: 4, primary: true },
     { label: 6, x: 330, y: 420, targetLevel: 1, primary: false },
     { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
     { label: 9, x: 650, y: 250, targetLevel: 3, primary: false },
@@ -493,6 +493,7 @@ function setOverlayMode(mode = "default") {
 function applyLevelTheme() {
     document.body.classList.toggle("level-two", currentLevel === 2);
     document.body.classList.toggle("level-three", currentLevel === 3);
+    document.body.classList.toggle("level-four", currentLevel === 4);
 }
 
 function getActiveSpawnLimit() {
@@ -1295,7 +1296,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                     <span class="tutorial-banner-title">Global Hunt Map</span>
                     <h1>Chicken Shooting</h1>
                     <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
-                    <p>Click pin <strong>1</strong>, <strong>2</strong> or <strong>3</strong> on the map to open that exact level directly.</p>
+                    <p>Click pin <strong>1</strong>, <strong>2</strong>, <strong>3</strong> or <strong>4</strong> on the map to open that exact level directly.</p>
                     ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
                 </div>
                 <div class="intro-panel intro-status-panel">
@@ -1321,7 +1322,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                         <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint, and over 2300 for the racing circuit.</li>
                     </ul>
                 </div>
                 ${authPanelMarkup}

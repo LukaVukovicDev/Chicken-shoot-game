@@ -31,6 +31,8 @@ function fetchRoutes(?PDO $db): array
         return [];
     }
 
+    ensureRoutesTable($db);
+
     $statement = $db->query(
         'SELECT
             id,
