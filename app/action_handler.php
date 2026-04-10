@@ -139,6 +139,44 @@ function readValidatedInt(string $name, string $message, int $min = 0, ?int $max
     return (int) $value;
 }
 
+function validateScoreIntegrity(int $score, int $clicks, int $hits): void
+{
+    $maxPointsPerHit = 56;
+
+    if ($clicks === 0 && ($score > 0 || $hits > 0)) {
+        logSecurityEvent('request_rejected_invalid_score_payload', [
+            'reason' => 'non_zero_score_without_clicks',
+            'score' => $score,
+            'clicks' => $clicks,
+            'hits' => $hits,
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+    }
+
+    if ($hits === 0 && $score > 0) {
+        logSecurityEvent('request_rejected_invalid_score_payload', [
+            'reason' => 'score_without_hits',
+            'score' => $score,
+            'clicks' => $clicks,
+            'hits' => $hits,
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+    }
+
+    if ($score > ($hits * $maxPointsPerHit)) {
+        logSecurityEvent('request_rejected_invalid_score_payload', [
+            'reason' => 'score_above_max_points_per_hit',
+            'score' => $score,
+            'clicks' => $clicks,
+            'hits' => $hits,
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+    }
+}
+
 function handleRegisterAction(PDO $db): never
 {
     $username = trim((string) ($_POST['username'] ?? ''));
@@ -253,6 +291,7 @@ function handleSaveScoreAction(PDO $db): never
     $score = readValidatedInt('score', 'Invalid score.');
     $clicks = readValidatedInt('clicks', 'Invalid clicks value.');
     $hits = readValidatedInt('hits', 'Invalid hits value.', 0, $clicks);
+    validateScoreIntegrity($score, $clicks, $hits);
 
     $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits) VALUES (:user_id, :score, :clicks, :hits)');
     $insert->execute([
