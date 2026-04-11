@@ -48,6 +48,8 @@ const levelUnlockStorageKey = "chicken-shooting-unlocked-level";
 const cookieConsentStorageKey = "chicken-shooting-cookie-consent";
 const cookieConsentMaxAge = 60 * 60 * 24 * 180;
 const functionalStorageKeys = [bestScoreStorageKey, levelUnlockStorageKey];
+const racingComboWindowMs = 1400;
+const racingComboBonusPoints = 12;
 const reloadSequenceLength = 4;
 const reloadDirections = ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"];
 const reloadSymbols = {
@@ -112,6 +114,8 @@ let currentLevel = 1;
 let maxUnlockedLevel = 1;
 let selectedStartLevel = 1;
 let levelTransitionTimeout = null;
+let racingComboCount = 0;
+let lastRacingHitAt = 0;
 
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
@@ -508,6 +512,42 @@ function getActiveSpeedMultiplier() {
     return getLevelConfig().speedMultiplier;
 }
 
+function resetRacingCombo() {
+    racingComboCount = 0;
+    lastRacingHitAt = 0;
+}
+
+function isRacingLevel() {
+    return currentLevel === 4 && !tutorialMode;
+}
+
+function getRacingHitBonus() {
+    if (!isRacingLevel()) {
+        resetRacingCombo();
+        return 0;
+    }
+
+    const now = Date.now();
+    racingComboCount = now - lastRacingHitAt <= racingComboWindowMs
+        ? racingComboCount + 1
+        : 1;
+    lastRacingHitAt = now;
+
+    if (racingComboCount < 2) {
+        return 0;
+    }
+
+    return Math.min(48, racingComboCount * racingComboBonusPoints);
+}
+
+function describeRacingCombo(bonusPoints) {
+    if (bonusPoints <= 0) {
+        return "";
+    }
+
+    return ` Racing combo x${racingComboCount}: +${bonusPoints} bonus.`;
+}
+
 function hideLevelBanner() {
     clearTimeout(levelTransitionTimeout);
     levelTransitionTimeout = null;
@@ -552,6 +592,7 @@ function activateLevel(level, options = {}) {
     spawnAccumulator = 0;
     secondAccumulator = 0;
     lastFrameTime = 0;
+    resetRacingCombo();
     cancelReloadChallenge();
     clearAllChickens();
     applyLevelTheme();
@@ -1760,11 +1801,13 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
     if (directHit && chicken && chicken.alive) {
         chicken.alive = false;
         hitCount += 1;
-        score += chicken.points;
+        const racingBonus = getRacingHitBonus();
+        const awardedPoints = chicken.points + racingBonus;
+        score += awardedPoints;
         updateHud();
-        setStatus(`Direct hit! +${chicken.points} points`);
+        setStatus(`Direct hit! +${awardedPoints} points.${describeRacingCombo(racingBonus)}`);
         chicken.el.classList.add("hit");
-        createEffect(x, y, "score-pop", `+${chicken.points}`);
+        createEffect(x, y, "score-pop", `+${awardedPoints}`);
         if (tutorialMode) {
             advanceTutorialAfterHit();
         }
@@ -1774,6 +1817,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
             return;
         }
     } else {
+        resetRacingCombo();
         if (!tutorialMode) {
             score = Math.max(0, score - 2);
             updateHud();
@@ -1939,6 +1983,7 @@ function resetRoundState() {
     secondAccumulator = 0;
     gamePaused = false;
     currentLevel = 1;
+    resetRacingCombo();
     applyLevelTheme();
 }
 
