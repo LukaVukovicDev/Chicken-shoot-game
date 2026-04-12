@@ -945,12 +945,21 @@ function buildAnalyticsMarkup() {
 
     const analytics = appState.analytics;
     const bestRound = analytics?.best_accuracy_round;
+    const rank = analytics?.rank;
+    const rankText = rank
+        ? `#${rank.position} of ${rank.total_players}`
+        : "No saved rank yet";
+    const nextRankText = rank?.points_to_next_rank
+        ? `${rank.points_to_next_rank} pts`
+        : "Top rank reached";
 
     return `
         <div class="analytics-grid">
             <div class="card-section">
                 <h3>Player Analytics</h3>
                 <ul class="stats-list">
+                    <li>Global rank: <strong>${rankText}</strong></li>
+                    <li>Points to next rank: <strong>${nextRankText}</strong></li>
                     <li>Rounds played: <strong>${analytics?.rounds_played || 0}</strong></li>
                     <li>Best score: <strong>${analytics?.best_score || 0}</strong></li>
                     <li>Best accuracy: <strong>${formatMetric(analytics?.best_accuracy || 0, 1)}%</strong></li>

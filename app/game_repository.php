@@ -58,6 +58,45 @@ function fetchRoutes(?PDO $db): array
     return $statement->fetchAll() ?: [];
 }
 
+function fetchPlayerRank(?PDO $db, ?array $user): ?array
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $statement = $db->query(
+        'SELECT
+            user_id,
+            MAX(score) AS best_score,
+            MIN(created_at) AS first_round_at
+         FROM scores
+         GROUP BY user_id
+         ORDER BY best_score DESC, first_round_at ASC, user_id ASC'
+    );
+
+    $rankedPlayers = $statement->fetchAll() ?: [];
+    $currentUserId = (int) $user['id'];
+
+    foreach ($rankedPlayers as $index => $player) {
+        if ((int) $player['user_id'] !== $currentUserId) {
+            continue;
+        }
+
+        $nextPlayer = $rankedPlayers[$index - 1] ?? null;
+        $pointsToNextRank = $nextPlayer
+            ? max(0, (int) $nextPlayer['best_score'] - (int) $player['best_score'] + 1)
+            : 0;
+
+        return [
+            'position' => $index + 1,
+            'total_players' => count($rankedPlayers),
+            'points_to_next_rank' => $pointsToNextRank,
+        ];
+    }
+
+    return null;
+}
+
 function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
 {
     if (!$db || !$user) {
@@ -114,6 +153,7 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'best_accuracy' => round((float) ($summary['best_accuracy'] ?? 0), 1),
         'best_score' => (int) ($summary['best_score'] ?? 0),
         'best_accuracy_round' => $bestRound,
+        'rank' => fetchPlayerRank($db, $user),
         'history' => $history,
     ];
 }
