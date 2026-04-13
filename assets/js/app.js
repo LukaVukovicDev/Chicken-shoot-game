@@ -221,6 +221,54 @@ function classifyPlayerLevel(scoreValue, accuracyValue, pointsPerShotValue, hits
     };
 }
 
+function getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, pointsPerShotValue) {
+    const missedShots = Math.max(0, clicksValue - hitsValue);
+    const tips = [];
+
+    if (clicksValue === 0) {
+        tips.push("Kreni odmah sa najsporijim metama da uhvatis ritam pre brzih kokosaka.");
+    } else if (accuracyValue < 25) {
+        tips.push(`Preciznost je ${formatMetric(accuracyValue, 1)}%. Sacekaj da meta udje u sredinu ekrana pre pucnja.`);
+    } else if (accuracyValue < 45) {
+        tips.push(`Imao si ${missedShots} promasaja. Probaj krace serije pucanja i ostavi brze mete za kraj.`);
+    } else {
+        tips.push(`Preciznost od ${formatMetric(accuracyValue, 1)}% je dobra osnova. Sada juri skuplje mete za veci skor.`);
+    }
+
+    if (pointsPerShotValue < 3 && hitsValue > 0) {
+        tips.push("Poeni po pucnju su niski. Biraj zlatne i plave kokoske kada imas cist ugao.");
+    } else if (pointsPerShotValue >= 6) {
+        tips.push("Odlicna efikasnost po pucnju. Nastavi da cuvas municiju za mete koje vrede vise.");
+    } else {
+        tips.push("Efikasnost je stabilna. Sledeci napredak dolazi iz manje panicnih klikova.");
+    }
+
+    if (scoreValue < 800) {
+        tips.push("Cilj za sledecu rundu: predji 800 poena i otkljucaj sledecu rutu.");
+    } else if (scoreValue < 1500) {
+        tips.push("Sledeci izazov je 1500 poena. Kombinuj preciznost i brze mete.");
+    } else if (scoreValue < 2300) {
+        tips.push("Blizu si trkacke rute. Guraj preko 2300 poena za najbrzi tempo igre.");
+    } else {
+        tips.push("Imas skor za sve rute. Na racing nivou vezuj brze pogotke zbog combo bonusa.");
+    }
+
+    return tips;
+}
+
+function buildRoundCoachMarkup(scoreValue, clicksValue, hitsValue, accuracyValue, pointsPerShotValue) {
+    const tips = getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, pointsPerShotValue);
+
+    return `
+        <div class="card-section">
+            <h3>Coach Notes</h3>
+            <ul class="menu-list">
+                ${tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join("")}
+            </ul>
+        </div>
+    `;
+}
+
 function formatMetric(value, digits = 1) {
     return Number(value || 0).toFixed(digits);
 }
@@ -1960,6 +2008,7 @@ async function endGame(endedEarly = false) {
                 <li>Points per shot: <strong>${formatMetric(finalPointsPerShot, 2)}</strong></li>
                 <li>Best local score: <strong>${bestScore}</strong></li>
             </ul>
+            ${buildRoundCoachMarkup(finalScore, finalClicks, finalHits, finalAccuracy, finalPointsPerShot)}
             <div class="button-row">
                 <button class="button" type="button" data-action="restartGame">Play Again</button>
                 <button class="button secondary" type="button" data-action="openSettings">User Settings</button>

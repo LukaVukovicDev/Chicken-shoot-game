@@ -155,7 +155,57 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'best_accuracy_round' => $bestRound,
         'rank' => fetchPlayerRank($db, $user),
         'history' => $history,
+        'score_trend' => calculateScoreTrend($history),
     ];
+}
+
+function calculateScoreTrend(array $history): array
+{
+    $scores = array_map(static fn (array $round): int => (int) ($round['score'] ?? 0), $history);
+    $roundCount = count($scores);
+
+    if ($roundCount < 2) {
+        return [
+            'status' => 'not_enough_data',
+            'label' => 'Play more rounds',
+            'summary' => 'Finish at least two saved rounds to unlock trend analysis.',
+            'delta' => 0,
+            'recent_average' => $roundCount === 1 ? $scores[0] : 0,
+            'previous_average' => 0,
+        ];
+    }
+
+    $recentSize = max(1, intdiv($roundCount, 2));
+    $previousScores = array_slice($scores, 0, $roundCount - $recentSize);
+    $recentScores = array_slice($scores, -$recentSize);
+    $previousAverage = (int) round(array_sum($previousScores) / max(1, count($previousScores)));
+    $recentAverage = (int) round(array_sum($recentScores) / max(1, count($recentScores)));
+    $delta = (int) round($recentAverage - $previousAverage);
+    $trend = [
+        'status' => 'steady',
+        'label' => 'Stable form',
+        'summary' => 'Your recent scores are close to your earlier saved rounds.',
+    ];
+
+    if ($delta >= 75) {
+        $trend = [
+            'status' => 'improving',
+            'label' => 'Improving',
+            'summary' => 'Your recent average is climbing. Keep the same shooting rhythm.',
+        ];
+    } elseif ($delta <= -75) {
+        $trend = [
+            'status' => 'cooling',
+            'label' => 'Cooling off',
+            'summary' => 'Your recent average dipped. Slow down misses and rebuild accuracy.',
+        ];
+    }
+
+    return array_merge($trend, [
+        'delta' => $delta,
+        'recent_average' => $recentAverage,
+        'previous_average' => $previousAverage,
+    ]);
 }
 
 function getSessionUser(?PDO $db): ?array
