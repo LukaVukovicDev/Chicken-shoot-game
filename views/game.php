@@ -76,6 +76,13 @@ $initialAppState = [
             <div class="track-lane track-lane-one"></div>
             <div class="track-lane track-lane-two"></div>
         </div>
+        <div class="paris-scene" aria-hidden="true">
+            <div class="paris-glow"></div>
+            <img class="eiffel-tower-backdrop" src="assets/images/eiffel-tower.svg" alt="">
+            <div class="paris-skyline paris-skyline-back"></div>
+            <div class="paris-skyline paris-skyline-front"></div>
+            <div class="paris-lights"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>

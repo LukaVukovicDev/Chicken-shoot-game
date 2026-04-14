@@ -13,6 +13,10 @@
     --sea-bottom: #1478a4;
     --sand-top: #f8d89a;
     --sand-bottom: #e4bb6d;
+    --paris-sky-top: #86c6c8;
+    --paris-sky-bottom: #ee9a7d;
+    --paris-ground-top: #536a58;
+    --paris-ground-bottom: #26362d;
     --panel: rgba(16, 34, 26, 0.8);
     --accent: #ffcb45;
     --danger: #ff735a;
@@ -63,6 +67,12 @@ body.level-four {
         radial-gradient(circle at 50% 14%, rgba(255, 242, 158, 0.24), transparent 18%),
         radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.12), transparent 16%),
         linear-gradient(180deg, #85b7db 0%, #587d9c 32%, #46525f 32%, #262e36 58%, #1d2228 100%);
+}
+
+body.level-five {
+    background:
+        linear-gradient(180deg, rgba(255, 247, 214, 0.32) 0%, rgba(255, 247, 214, 0) 28%),
+        linear-gradient(180deg, var(--paris-sky-top) 0%, var(--paris-sky-bottom) 42%, var(--paris-ground-top) 42%, var(--paris-ground-bottom) 100%);
 }
 
 .game-shell {
@@ -224,6 +234,92 @@ body.level-three .tropical-scene {
 body.level-four .racetrack-scene {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+}
+
+.paris-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+body.level-five .paris-scene {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+.paris-glow {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 24vh;
+    height: 34vh;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255, 225, 139, 0.18) 42%, rgba(242, 132, 107, 0.16) 58%, transparent 100%),
+        linear-gradient(180deg, rgba(255, 225, 139, 0.22) 0%, rgba(255, 225, 139, 0) 78%);
+    mix-blend-mode: screen;
+}
+
+.eiffel-tower-backdrop {
+    position: absolute;
+    left: 50%;
+    bottom: 17vh;
+    width: min(30vw, 300px);
+    min-width: 170px;
+    max-height: 64vh;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 18px 18px rgba(9, 19, 18, 0.32));
+    opacity: 0.96;
+}
+
+.paris-skyline {
+    position: absolute;
+    inset-inline: -4%;
+    bottom: 20vh;
+    height: 16vh;
+    background:
+        linear-gradient(180deg, rgba(255, 208, 132, 0.12), rgba(255, 208, 132, 0) 28%),
+        repeating-linear-gradient(90deg,
+            transparent 0 2.8%,
+            rgba(41, 58, 52, 0.88) 2.8% 5.6%,
+            transparent 5.6% 8.4%,
+            rgba(30, 45, 42, 0.94) 8.4% 11.7%,
+            transparent 11.7% 14.2%);
+    clip-path: polygon(0 100%, 0 62%, 6% 62%, 6% 48%, 10% 48%, 10% 58%, 15% 58%, 15% 42%, 19% 42%, 19% 57%, 25% 57%, 25% 50%, 30% 50%, 30% 64%, 36% 64%, 36% 44%, 41% 44%, 41% 58%, 49% 58%, 49% 46%, 54% 46%, 54% 62%, 61% 62%, 61% 52%, 66% 52%, 66% 60%, 72% 60%, 72% 43%, 77% 43%, 77% 58%, 84% 58%, 84% 50%, 89% 50%, 89% 63%, 95% 63%, 95% 48%, 100% 48%, 100% 100%);
+    opacity: 0.74;
+}
+
+.paris-skyline-front {
+    bottom: 16vh;
+    height: 14vh;
+    background:
+        linear-gradient(180deg, rgba(255, 226, 150, 0.16), rgba(255, 226, 150, 0) 26%),
+        repeating-linear-gradient(90deg,
+            rgba(25, 40, 35, 0.96) 0 4.8%,
+            rgba(50, 68, 55, 0.96) 4.8% 8.2%,
+            rgba(31, 47, 42, 0.96) 8.2% 13.8%);
+    clip-path: polygon(0 100%, 0 52%, 4% 52%, 4% 36%, 9% 36%, 9% 61%, 14% 61%, 14% 42%, 21% 42%, 21% 56%, 27% 56%, 27% 34%, 32% 34%, 32% 63%, 38% 63%, 38% 46%, 45% 46%, 45% 59%, 52% 59%, 52% 38%, 58% 38%, 58% 56%, 64% 56%, 64% 44%, 70% 44%, 70% 62%, 77% 62%, 77% 40%, 83% 40%, 83% 58%, 90% 58%, 90% 46%, 96% 46%, 96% 64%, 100% 64%, 100% 100%);
+    opacity: 0.92;
+}
+
+.paris-lights {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 17vh;
+    height: 12vh;
+    background:
+        radial-gradient(circle at 9% 72%, rgba(255, 225, 127, 0.84) 0 3px, transparent 4px),
+        radial-gradient(circle at 18% 48%, rgba(255, 225, 127, 0.68) 0 2px, transparent 3px),
+        radial-gradient(circle at 29% 64%, rgba(255, 225, 127, 0.8) 0 3px, transparent 4px),
+        radial-gradient(circle at 41% 38%, rgba(255, 225, 127, 0.7) 0 2px, transparent 3px),
+        radial-gradient(circle at 58% 62%, rgba(255, 225, 127, 0.82) 0 3px, transparent 4px),
+        radial-gradient(circle at 70% 44%, rgba(255, 225, 127, 0.64) 0 2px, transparent 3px),
+        radial-gradient(circle at 82% 68%, rgba(255, 225, 127, 0.76) 0 3px, transparent 4px),
+        radial-gradient(circle at 93% 48%, rgba(255, 225, 127, 0.68) 0 2px, transparent 3px);
+    animation: paris-lights 2.4s ease-in-out infinite alternate;
 }
 
 .track-horizon {
@@ -681,6 +777,30 @@ body.level-four .ground {
     border-top: 2px solid rgba(208, 217, 228, 0.3);
 }
 
+body.level-five .sun {
+    top: 76px;
+    right: 9vw;
+    width: 98px;
+    height: 98px;
+    background: radial-gradient(circle, rgba(255, 244, 199, 0.96) 0%, rgba(255, 209, 111, 0.88) 42%, rgba(242, 132, 107, 0.26) 64%, transparent 72%);
+    box-shadow: 0 0 40px rgba(255, 198, 108, 0.24);
+}
+
+body.level-five .cloud,
+body.level-five .cloud::before,
+body.level-five .cloud::after {
+    background: rgba(250, 244, 228, 0.58);
+}
+
+body.level-five .ground {
+    height: 28vh;
+    background:
+        linear-gradient(180deg, rgba(255, 224, 144, 0.14), rgba(255, 224, 144, 0) 16%),
+        repeating-linear-gradient(90deg, rgba(255, 223, 128, 0.08) 0 18px, transparent 18px 36px),
+        linear-gradient(180deg, #4c644f 0%, #334739 46%, #223128 100%);
+    border-top: 2px solid rgba(255, 224, 144, 0.24);
+}
+
 body.level-three .level-banner {
     background: linear-gradient(135deg, rgba(124, 61, 33, 0.9), rgba(207, 119, 63, 0.9));
     border-color: rgba(255, 219, 173, 0.42);
@@ -691,6 +811,12 @@ body.level-four .level-banner {
     background: linear-gradient(135deg, rgba(42, 48, 58, 0.92), rgba(105, 41, 27, 0.92));
     border-color: rgba(255, 208, 160, 0.34);
     box-shadow: 0 18px 34px rgba(18, 22, 28, 0.34);
+}
+
+body.level-five .level-banner {
+    background: linear-gradient(135deg, rgba(31, 54, 48, 0.92), rgba(184, 86, 83, 0.9));
+    border-color: rgba(255, 224, 144, 0.38);
+    box-shadow: 0 18px 34px rgba(18, 32, 28, 0.34);
 }
 
 .instructions {
@@ -1842,6 +1968,20 @@ body.level-four .level-banner {
     opacity: 0.92;
 }
 
+.chicken.paris-chicken .chicken-sprite {
+    animation: paris-hover 0.72s ease-in-out infinite alternate;
+}
+
+.chicken.paris-chicken .paris-beret {
+    transform-origin: 88px 35px;
+    animation: beret-tilt 1.2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 3px 4px rgba(8, 14, 14, 0.22));
+}
+
+.chicken.paris-chicken .paris-beret-pin {
+    animation: tower-pin-glint 1.8s ease-in-out infinite;
+}
+
 .chicken.hit {
     animation: pop 0.32s ease forwards;
 }
@@ -2200,6 +2340,48 @@ body.cookie-banner-visible .db-warning {
 
     100% {
         transform: scale(1.06);
+    }
+}
+
+@keyframes paris-hover {
+    0% {
+        transform: rotate(-3deg) translateY(1px) scale(1);
+    }
+
+    100% {
+        transform: rotate(3deg) translateY(-2px) scale(1.04);
+    }
+}
+
+@keyframes beret-tilt {
+    0% {
+        transform: rotate(-4deg) translateY(1px);
+    }
+
+    100% {
+        transform: rotate(5deg) translateY(-1px);
+    }
+}
+
+@keyframes tower-pin-glint {
+
+    0%,
+    100% {
+        opacity: 0.64;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes paris-lights {
+    0% {
+        opacity: 0.62;
+    }
+
+    100% {
+        opacity: 0.98;
     }
 }
 
@@ -2618,6 +2800,22 @@ body.cookie-banner-visible .db-warning {
     .palm::after {
         width: 110px;
         height: 72px;
+    }
+
+    .eiffel-tower-backdrop {
+        width: min(42vw, 220px);
+        min-width: 126px;
+        bottom: 19vh;
+    }
+
+    .paris-skyline {
+        bottom: 21vh;
+        height: 13vh;
+    }
+
+    .paris-skyline-front {
+        bottom: 17vh;
+        height: 12vh;
     }
 
     .chicken {

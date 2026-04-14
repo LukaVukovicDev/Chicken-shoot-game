@@ -71,6 +71,7 @@ const mapPins = [
     { label: 2, x: 180, y: 160, targetLevel: 2, primary: true },
     { label: 3, x: 280, y: 150, targetLevel: 3, primary: true },
     { label: 1, x: 480, y: 130, targetLevel: 1, primary: true },
+    { label: 5, x: 430, y: 125, targetLevel: 5, primary: true },
     { label: 4, x: 320, y: 350, targetLevel: 4, primary: true },
     { label: 6, x: 330, y: 420, targetLevel: 1, primary: false },
     { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
@@ -249,8 +250,10 @@ function getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, po
         tips.push("Sledeci izazov je 1500 poena. Kombinuj preciznost i brze mete.");
     } else if (scoreValue < 2300) {
         tips.push("Blizu si trkacke rute. Guraj preko 2300 poena za najbrzi tempo igre.");
+    } else if (scoreValue < 3200) {
+        tips.push("Sledeci veliki skok je Pariz. Predji 3200 poena i otkljucaj peti nivo.");
     } else {
-        tips.push("Imas skor za sve rute. Na racing nivou vezuj brze pogotke zbog combo bonusa.");
+        tips.push("Imas skor za sve rute. Na pariskom nivou biraj ciste uglove jer je tempo najbrzi.");
     }
 
     return tips;
@@ -546,6 +549,7 @@ function applyLevelTheme() {
     document.body.classList.toggle("level-two", currentLevel === 2);
     document.body.classList.toggle("level-three", currentLevel === 3);
     document.body.classList.toggle("level-four", currentLevel === 4);
+    document.body.classList.toggle("level-five", currentLevel === 5);
 }
 
 function getActiveSpawnLimit() {
@@ -1394,7 +1398,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                     <span class="tutorial-banner-title">Global Hunt Map</span>
                     <h1>Chicken Shooting</h1>
                     <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
-                    <p>Click pin <strong>1</strong>, <strong>2</strong>, <strong>3</strong> or <strong>4</strong> on the map to open that exact level directly.</p>
+                    <p>Click pin <strong>1</strong>, <strong>2</strong>, <strong>3</strong>, <strong>4</strong> or <strong>5</strong> on the map to open that exact level directly.</p>
                     ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
                 </div>
                 <div class="intro-panel intro-status-panel">
@@ -1420,7 +1424,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                         <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, then beyond 1500 to reach the tropical island sprint, and over 2300 for the racing circuit.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, beyond 1500 for the tropical island sprint, over 2300 for the racing circuit, and beyond 3200 for Paris Night.</li>
                     </ul>
                 </div>
                 ${authPanelMarkup}
@@ -1700,12 +1704,20 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
                     <circle class="winter-hat-badge" cx="81" cy="31" r="9.2" fill="none" stroke="#f0d25c" stroke-width="2"></circle>
                 </g>
             ` : "";
+    const parisBeret = currentLevel === 5 ? `
+                <g class="paris-beret">
+                    <path class="paris-beret-crown" d="M70 31 C78 20, 99 18, 111 29 C102 39, 82 42, 65 36 C64 33, 66 31, 70 31 Z" fill="#161719"></path>
+                    <path class="paris-beret-brim" d="M67 36 C78 42, 98 42, 110 34 C111 39, 104 45, 90 47 C78 49, 68 45, 64 40 C63 38, 64 36, 67 36 Z" fill="#26292d"></path>
+                    <path class="paris-beret-pin" d="M88 19 L91 26" stroke="#f7d35d" stroke-width="3" stroke-linecap="round"></path>
+                </g>
+            ` : "";
     return `
         <span class="chicken-sprite">
             <svg viewBox="0 0 120 120" aria-hidden="true">
                 ${winterHat}
                 <ellipse cx="62" cy="68" rx="30" ry="22" fill="${bodyColor}"></ellipse>
                 <ellipse cx="88" cy="52" rx="18" ry="15" fill="${bodyColor}"></ellipse>
+                ${parisBeret}
                 <ellipse cx="40" cy="64" rx="16" ry="13" fill="${wingColor}" opacity="0.95"></ellipse>
                 <circle cx="95" cy="49" r="3.4" fill="#2b2318"></circle>
                 <polygon points="102,55 117,60 102,65" fill="${beakColor}"></polygon>

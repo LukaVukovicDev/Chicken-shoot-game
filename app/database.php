@@ -215,6 +215,24 @@ function ensureRoutesTable(PDO $db): void
             'unlock_score' => 2300,
             'display_order' => 4,
         ],
+        [
+            'id' => 5,
+            'name' => 'Level 5',
+            'map_title' => 'Paris Night',
+            'map_copy' => 'A Paris skyline hunt with the Eiffel Tower glowing behind the action.',
+            'locked_copy' => 'Unlock by pushing beyond 3200 score.',
+            'status_text' => 'Level 5 started. Paris is lit up, the Eiffel Tower is in the background and the flock is flying at full speed.',
+            'banner_title' => 'Level 5',
+            'banner_copy' => 'Stizes u Pariz. Ajfelov toranj svetli iza mete, a kokoske sada prelecu grad jos brzim tempom.',
+            'start_count' => 8,
+            'spawn_limit' => 15,
+            'spawn_every_ms' => 460,
+            'speed_multiplier' => 1.62,
+            'chicken_class' => 'paris-chicken',
+            'accessory' => 'beret',
+            'unlock_score' => 3200,
+            'display_order' => 5,
+        ],
     ];
 
     foreach ($defaultRoutes as $route) {
