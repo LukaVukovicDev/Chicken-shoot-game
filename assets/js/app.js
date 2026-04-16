@@ -73,7 +73,7 @@ const mapPins = [
     { label: 1, x: 480, y: 130, targetLevel: 1, primary: true },
     { label: 5, x: 430, y: 125, targetLevel: 5, primary: true },
     { label: 4, x: 320, y: 350, targetLevel: 4, primary: true },
-    { label: 6, x: 330, y: 420, targetLevel: 1, primary: false },
+    { label: 6, x: 330, y: 420, targetLevel: 6, primary: true },
     { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
     { label: 9, x: 650, y: 250, targetLevel: 3, primary: false },
     { label: 10, x: 820, y: 380, targetLevel: 3, primary: false },
@@ -253,7 +253,7 @@ function getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, po
     } else if (scoreValue < 3200) {
         tips.push("Sledeci veliki skok je Pariz. Predji 3200 poena i otkljucaj peti nivo.");
     } else {
-        tips.push("Imas skor za sve rute. Na pariskom nivou biraj ciste uglove jer je tempo najbrzi.");
+        tips.push("Imas skor za sve rute. Na nivou u Pizi biraj ciste uglove jer je tempo najbrzi.");
     }
 
     return tips;
@@ -550,6 +550,7 @@ function applyLevelTheme() {
     document.body.classList.toggle("level-three", currentLevel === 3);
     document.body.classList.toggle("level-four", currentLevel === 4);
     document.body.classList.toggle("level-five", currentLevel === 5);
+    document.body.classList.toggle("level-six", currentLevel === 6);
 }
 
 function getActiveSpawnLimit() {

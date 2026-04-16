@@ -233,6 +233,24 @@ function ensureRoutesTable(PDO $db): void
             'unlock_score' => 3200,
             'display_order' => 5,
         ],
+        [
+            'id' => 6,
+            'name' => 'Level 6',
+            'map_title' => 'Pisa Plaza',
+            'map_copy' => 'A fast Italian plaza hunt beneath the leaning tower of Pisa.',
+            'locked_copy' => 'Unlock by pushing beyond 4100 score.',
+            'status_text' => 'Level 6 started. Pisa is open, the tower is leaning behind the action and the flock is flying in Italian colors.',
+            'banner_title' => 'Level 6',
+            'banner_copy' => 'Stizes u Pizu. Krivi toranj je iza mete, a kokoske nose boje italijanske zastave.',
+            'start_count' => 9,
+            'spawn_limit' => 16,
+            'spawn_every_ms' => 420,
+            'speed_multiplier' => 1.74,
+            'chicken_class' => 'italy-chicken',
+            'accessory' => 'italy',
+            'unlock_score' => 4100,
+            'display_order' => 6,
+        ],
     ];
 
     foreach ($defaultRoutes as $route) {
