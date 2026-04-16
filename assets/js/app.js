@@ -1693,6 +1693,10 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
         return tropicalChickenMarkup();
     }
 
+    const isItalyLevel = currentLevel === 6;
+    const renderedBodyColor = isItalyLevel ? "#fff7e6" : bodyColor;
+    const renderedWingColor = isItalyLevel ? "#168a4a" : wingColor;
+    const renderedBeakColor = isItalyLevel ? "#f2a12b" : beakColor;
     const winterHat = currentLevel === 2 ? `
                 <g class="winter-hat">
                     <path class="winter-hat-top" d="M60 16 C70 10, 92 11, 102 20 C104 30, 101 40, 90 45 L67 45 C58 40, 56 27, 60 16 Z" fill="#101010"></path>
@@ -1712,16 +1716,31 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
                     <path class="paris-beret-pin" d="M88 19 L91 26" stroke="#f7d35d" stroke-width="3" stroke-linecap="round"></path>
                 </g>
             ` : "";
+    const italyFlagColors = isItalyLevel ? `
+                <g class="italy-flag-body">
+                    <ellipse cx="51" cy="68" rx="13" ry="20" fill="#138a43"></ellipse>
+                    <ellipse cx="62" cy="68" rx="12" ry="21" fill="#fffdf4"></ellipse>
+                    <ellipse cx="74" cy="68" rx="13" ry="20" fill="#ce2b37"></ellipse>
+                </g>
+                <g class="italy-flag-head">
+                    <ellipse cx="82" cy="52" rx="7" ry="13" fill="#138a43"></ellipse>
+                    <ellipse cx="89" cy="52" rx="7" ry="14" fill="#fffdf4"></ellipse>
+                    <ellipse cx="96" cy="52" rx="7" ry="13" fill="#ce2b37"></ellipse>
+                </g>
+                <path class="italy-scarf" d="M74 73 C83 79, 94 80, 103 75" stroke="#138a43" stroke-width="6" fill="none" stroke-linecap="round"></path>
+                <path class="italy-scarf" d="M78 80 C87 86, 98 86, 108 80" stroke="#ce2b37" stroke-width="5" fill="none" stroke-linecap="round"></path>
+            ` : "";
     return `
         <span class="chicken-sprite">
             <svg viewBox="0 0 120 120" aria-hidden="true">
                 ${winterHat}
-                <ellipse cx="62" cy="68" rx="30" ry="22" fill="${bodyColor}"></ellipse>
-                <ellipse cx="88" cy="52" rx="18" ry="15" fill="${bodyColor}"></ellipse>
+                <ellipse cx="62" cy="68" rx="30" ry="22" fill="${renderedBodyColor}"></ellipse>
+                <ellipse cx="88" cy="52" rx="18" ry="15" fill="${renderedBodyColor}"></ellipse>
+                ${italyFlagColors}
                 ${parisBeret}
-                <ellipse cx="40" cy="64" rx="16" ry="13" fill="${wingColor}" opacity="0.95"></ellipse>
+                <ellipse cx="40" cy="64" rx="16" ry="13" fill="${renderedWingColor}" opacity="0.95"></ellipse>
                 <circle cx="95" cy="49" r="3.4" fill="#2b2318"></circle>
-                <polygon points="102,55 117,60 102,65" fill="${beakColor}"></polygon>
+                <polygon points="102,55 117,60 102,65" fill="${renderedBeakColor}"></polygon>
                 <path d="M82 37 C88 26, 102 26, 106 40" stroke="#d84b3f" stroke-width="6" fill="none" stroke-linecap="round"></path>
                 <path d="M53 88 L50 109 M66 88 L63 109" stroke="#b56c2f" stroke-width="5" stroke-linecap="round"></path>
                 <path d="M49 109 L44 116 M49 109 L54 116 M62 109 L57 116 M62 109 L67 116" stroke="#b56c2f" stroke-width="4" stroke-linecap="round"></path>

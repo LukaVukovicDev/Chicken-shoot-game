@@ -2115,6 +2115,21 @@ body.level-six .level-banner {
     animation: tower-pin-glint 1.8s ease-in-out infinite;
 }
 
+.chicken.italy-chicken .chicken-sprite {
+    animation: italy-flag-float 0.68s ease-in-out infinite alternate;
+}
+
+.chicken.italy-chicken .italy-flag-body,
+.chicken.italy-chicken .italy-flag-head {
+    filter: drop-shadow(0 2px 2px rgba(51, 48, 36, 0.12));
+}
+
+.chicken.italy-chicken .italy-scarf {
+    animation: italy-scarf-sway 0.9s ease-in-out infinite alternate;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
 .chicken.hit {
     animation: pop 0.32s ease forwards;
 }
@@ -2505,6 +2520,26 @@ body.cookie-banner-visible .db-warning {
 
     50% {
         opacity: 1;
+    }
+}
+
+@keyframes italy-flag-float {
+    0% {
+        transform: rotate(-2deg) translateY(1px) scale(1);
+    }
+
+    100% {
+        transform: rotate(2deg) translateY(-2px) scale(1.04);
+    }
+}
+
+@keyframes italy-scarf-sway {
+    0% {
+        transform: rotate(-3deg) translateY(1px);
+    }
+
+    100% {
+        transform: rotate(4deg) translateY(-1px);
     }
 }
 
