@@ -83,6 +83,20 @@ $initialAppState = [
             <div class="paris-skyline paris-skyline-front"></div>
             <div class="paris-lights"></div>
         </div>
+        <div class="pisa-scene" aria-hidden="true">
+            <div class="pisa-hills"></div>
+            <div class="pisa-arcade"></div>
+            <div class="pisa-tower">
+                <span class="pisa-tower-cap"></span>
+                <span class="pisa-tower-floor"></span>
+                <span class="pisa-tower-floor"></span>
+                <span class="pisa-tower-floor"></span>
+                <span class="pisa-tower-floor"></span>
+                <span class="pisa-tower-floor"></span>
+                <span class="pisa-tower-base"></span>
+            </div>
+            <div class="pisa-plaza-lines"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>

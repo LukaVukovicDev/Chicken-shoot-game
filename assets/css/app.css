@@ -17,6 +17,10 @@
     --paris-sky-bottom: #ee9a7d;
     --paris-ground-top: #536a58;
     --paris-ground-bottom: #26362d;
+    --pisa-sky-top: #71c8e4;
+    --pisa-sky-bottom: #f4cf8a;
+    --pisa-ground-top: #7f985a;
+    --pisa-ground-bottom: #4e6b43;
     --panel: rgba(16, 34, 26, 0.8);
     --accent: #ffcb45;
     --danger: #ff735a;
@@ -73,6 +77,12 @@ body.level-five {
     background:
         linear-gradient(180deg, rgba(255, 247, 214, 0.32) 0%, rgba(255, 247, 214, 0) 28%),
         linear-gradient(180deg, var(--paris-sky-top) 0%, var(--paris-sky-bottom) 42%, var(--paris-ground-top) 42%, var(--paris-ground-bottom) 100%);
+}
+
+body.level-six {
+    background:
+        radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.4), transparent 18%),
+        linear-gradient(180deg, var(--pisa-sky-top) 0%, var(--pisa-sky-bottom) 44%, var(--pisa-ground-top) 44%, var(--pisa-ground-bottom) 100%);
 }
 
 .game-shell {
@@ -250,6 +260,99 @@ body.level-four .racetrack-scene {
 body.level-five .paris-scene {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+}
+
+.pisa-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+body.level-six .pisa-scene {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+.pisa-hills {
+    position: absolute;
+    inset-inline: -4%;
+    bottom: 33vh;
+    height: 18vh;
+    background:
+        linear-gradient(180deg, rgba(255, 246, 203, 0.18), rgba(255, 246, 203, 0) 36%),
+        linear-gradient(180deg, #78a86f 0%, #4f834f 100%);
+    clip-path: polygon(0 100%, 0 62%, 9% 48%, 18% 58%, 27% 34%, 38% 54%, 48% 30%, 58% 56%, 70% 36%, 82% 58%, 92% 42%, 100% 56%, 100% 100%);
+    opacity: 0.72;
+}
+
+.pisa-arcade {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 23vh;
+    height: 13vh;
+    background:
+        repeating-radial-gradient(ellipse at 50% 100%, transparent 0 22px, rgba(92, 65, 48, 0.74) 23px 27px, transparent 28px 54px),
+        linear-gradient(180deg, rgba(244, 226, 179, 0.94) 0%, rgba(202, 167, 112, 0.96) 100%);
+    border-top: 5px solid rgba(255, 244, 205, 0.82);
+    box-shadow: 0 16px 26px rgba(67, 48, 35, 0.18);
+}
+
+.pisa-tower {
+    position: absolute;
+    left: 50%;
+    bottom: 21vh;
+    display: grid;
+    gap: 5px;
+    width: min(18vw, 168px);
+    min-width: 112px;
+    padding: 10px 8px 12px;
+    transform: translateX(-50%) rotate(-8deg);
+    transform-origin: 50% 100%;
+    filter: drop-shadow(18px 22px 16px rgba(54, 38, 26, 0.24));
+}
+
+.pisa-tower-cap,
+.pisa-tower-floor,
+.pisa-tower-base {
+    display: block;
+    border: 3px solid rgba(122, 92, 64, 0.62);
+    background:
+        repeating-linear-gradient(90deg, rgba(118, 88, 60, 0.7) 0 5px, transparent 5px 18px),
+        linear-gradient(180deg, #fff0c6 0%, #d8bb82 100%);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.42);
+}
+
+.pisa-tower-cap {
+    height: 26px;
+    border-radius: 50% 50% 10px 10px;
+}
+
+.pisa-tower-floor {
+    height: clamp(24px, 4vh, 38px);
+    border-radius: 10px;
+}
+
+.pisa-tower-base {
+    height: 28px;
+    border-radius: 8px 8px 16px 16px;
+}
+
+.pisa-plaza-lines {
+    position: absolute;
+    inset-inline: -8%;
+    bottom: 0;
+    height: 25vh;
+    background:
+        linear-gradient(90deg, transparent 0 48%, rgba(255, 245, 215, 0.24) 48% 52%, transparent 52% 100%),
+        repeating-linear-gradient(105deg, rgba(255, 244, 205, 0.24) 0 2px, transparent 2px 34px),
+        repeating-linear-gradient(75deg, rgba(87, 65, 43, 0.12) 0 2px, transparent 2px 40px);
+    clip-path: polygon(0 100%, 7% 0, 93% 0, 100% 100%);
 }
 
 .paris-glow {
@@ -817,6 +920,36 @@ body.level-five .level-banner {
     background: linear-gradient(135deg, rgba(31, 54, 48, 0.92), rgba(184, 86, 83, 0.9));
     border-color: rgba(255, 224, 144, 0.38);
     box-shadow: 0 18px 34px rgba(18, 32, 28, 0.34);
+}
+
+body.level-six .sun {
+    top: 72px;
+    right: 8vw;
+    width: 102px;
+    height: 102px;
+    background: radial-gradient(circle, rgba(255, 247, 205, 0.98) 0%, rgba(255, 216, 102, 0.92) 42%, rgba(244, 177, 89, 0.28) 64%, transparent 72%);
+    box-shadow: 0 0 42px rgba(255, 210, 105, 0.25);
+}
+
+body.level-six .cloud,
+body.level-six .cloud::before,
+body.level-six .cloud::after {
+    background: rgba(255, 249, 232, 0.68);
+}
+
+body.level-six .ground {
+    height: 27vh;
+    background:
+        linear-gradient(180deg, rgba(255, 245, 210, 0.22), rgba(255, 245, 210, 0) 18%),
+        repeating-linear-gradient(92deg, rgba(255, 239, 197, 0.16) 0 20px, rgba(95, 110, 70, 0.08) 20px 40px),
+        linear-gradient(180deg, #768d55 0%, #5d7848 48%, #405f38 100%);
+    border-top: 2px solid rgba(255, 239, 197, 0.36);
+}
+
+body.level-six .level-banner {
+    background: linear-gradient(135deg, rgba(24, 102, 61, 0.92), rgba(191, 45, 41, 0.9));
+    border-color: rgba(255, 244, 205, 0.42);
+    box-shadow: 0 18px 34px rgba(32, 54, 35, 0.34);
 }
 
 .instructions {
