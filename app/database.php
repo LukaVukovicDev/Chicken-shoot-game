@@ -251,6 +251,24 @@ function ensureRoutesTable(PDO $db): void
             'unlock_score' => 4100,
             'display_order' => 6,
         ],
+        [
+            'id' => 7,
+            'name' => 'Level 7',
+            'map_title' => 'Rio Heights',
+            'map_copy' => 'A Corcovado hill hunt with Christ the Redeemer watching over Rio de Janeiro.',
+            'locked_copy' => 'Unlock by pushing beyond 5000 score.',
+            'status_text' => 'Level 7 started. Rio is open, Christ the Redeemer rises in the background and the flock is flying over the hills.',
+            'banner_title' => 'Level 7',
+            'banner_copy' => 'Stizes u Rio de Janeiro. Statua Isusa Hrista stoji iznad grada, a kokoske lete kroz najbrzi ritam do sada.',
+            'start_count' => 10,
+            'spawn_limit' => 17,
+            'spawn_every_ms' => 380,
+            'speed_multiplier' => 1.86,
+            'chicken_class' => 'rio-chicken',
+            'accessory' => 'rio',
+            'unlock_score' => 5000,
+            'display_order' => 7,
+        ],
     ];
 
     foreach ($defaultRoutes as $route) {
