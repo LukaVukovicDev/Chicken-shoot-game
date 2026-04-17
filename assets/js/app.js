@@ -74,6 +74,7 @@ const mapPins = [
     { label: 5, x: 430, y: 125, targetLevel: 5, primary: true },
     { label: 4, x: 320, y: 350, targetLevel: 4, primary: true },
     { label: 6, x: 330, y: 420, targetLevel: 6, primary: true },
+    { label: 7, x: 425, y: 315, targetLevel: 7, primary: true },
     { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
     { label: 9, x: 650, y: 250, targetLevel: 3, primary: false },
     { label: 10, x: 820, y: 380, targetLevel: 3, primary: false },
@@ -1399,7 +1400,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                     <span class="tutorial-banner-title">Global Hunt Map</span>
                     <h1>Chicken Shooting</h1>
                     <p>Desktop intro stays map-first, with the world map covering the whole screen and compact panels around the edges.</p>
-                    <p>Click pin <strong>1</strong>, <strong>2</strong>, <strong>3</strong>, <strong>4</strong> or <strong>5</strong> on the map to open that exact level directly.</p>
+                    <p>Click pins <strong>1</strong> through <strong>7</strong> on the map to open that exact level directly.</p>
                     ${showTutorialComplete ? '<p><strong>Tutorial successfully accomplished.</strong> Now you can launch any route directly from the map.</p>' : ""}
                 </div>
                 <div class="intro-panel intro-status-panel">
@@ -1425,7 +1426,7 @@ function getIntroOverlayMarkup(showTutorialComplete = false) {
                         <li class="tutorial-item"><span class="tutorial-title">Controls</span>Click to shoot. Press <strong>R</strong> to restart instantly. Use the <strong>Menu</strong> button or press <strong>Esc</strong> during a round to open the pause menu.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Reload</span>When ammo reaches zero, the shotgun appears on screen. Follow the arrow sequence on your keyboard, or tap the on-screen arrows on mobile, to chamber a new magazine.</li>
                         <li class="tutorial-item"><span class="tutorial-title">Best Targets</span>Blue chickens are the fastest and worth the most points. Cream ones are easiest to hit.</li>
-                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, beyond 1500 for the tropical island sprint, over 2300 for the racing circuit, and beyond 3200 for Paris Night.</li>
+                        <li class="tutorial-item"><span class="tutorial-title">Routes</span>Push past 800 points to unlock the Russian mountain route, beyond 1500 for the tropical island sprint, over 2300 for the racing circuit, beyond 3200 for Paris Night, over 4100 for Pisa Plaza, and beyond 5000 for Rio Heights.</li>
                     </ul>
                 </div>
                 ${authPanelMarkup}
