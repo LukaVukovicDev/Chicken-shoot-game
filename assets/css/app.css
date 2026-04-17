@@ -2310,6 +2310,17 @@ body.level-seven .level-banner {
     filter: drop-shadow(0 5px 5px rgba(14, 60, 54, 0.2));
 }
 
+.chicken.rio-chicken .rio-sash {
+    animation: rio-sash-wave 0.82s ease-in-out infinite alternate;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.chicken.rio-chicken .rio-badge,
+.chicken.rio-chicken .rio-badge-star {
+    filter: drop-shadow(0 2px 2px rgba(20, 55, 72, 0.22));
+}
+
 .chicken.hit {
     animation: pop 0.32s ease forwards;
 }
@@ -2730,6 +2741,16 @@ body.cookie-banner-visible .db-warning {
 
     100% {
         transform: rotate(2deg) translateY(-3px) scale(1.05);
+    }
+}
+
+@keyframes rio-sash-wave {
+    0% {
+        transform: rotate(-2deg) translateY(1px);
+    }
+
+    100% {
+        transform: rotate(3deg) translateY(-1px);
     }
 }
 

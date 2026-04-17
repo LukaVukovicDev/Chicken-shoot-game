@@ -253,8 +253,12 @@ function getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, po
         tips.push("Blizu si trkacke rute. Guraj preko 2300 poena za najbrzi tempo igre.");
     } else if (scoreValue < 3200) {
         tips.push("Sledeci veliki skok je Pariz. Predji 3200 poena i otkljucaj peti nivo.");
+    } else if (scoreValue < 4100) {
+        tips.push("Piza ceka na 4100 poena. Cuvaj municiju za brze mete i drzi tempo.");
+    } else if (scoreValue < 5000) {
+        tips.push("Rio se otkljucava preko 5000 poena. Gadjaj plave kokoske kad imaju cist prolaz.");
     } else {
-        tips.push("Imas skor za sve rute. Na nivou u Pizi biraj ciste uglove jer je tempo najbrzi.");
+        tips.push("Imas skor za sve rute. Na nivou u Riju biraj ciste uglove jer je tempo najbrzi.");
     }
 
     return tips;
@@ -552,6 +556,7 @@ function applyLevelTheme() {
     document.body.classList.toggle("level-four", currentLevel === 4);
     document.body.classList.toggle("level-five", currentLevel === 5);
     document.body.classList.toggle("level-six", currentLevel === 6);
+    document.body.classList.toggle("level-seven", currentLevel === 7);
 }
 
 function getActiveSpawnLimit() {
@@ -1695,6 +1700,7 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
     }
 
     const isItalyLevel = currentLevel === 6;
+    const isRioLevel = currentLevel === 7;
     const renderedBodyColor = isItalyLevel ? "#fff7e6" : bodyColor;
     const renderedWingColor = isItalyLevel ? "#168a4a" : wingColor;
     const renderedBeakColor = isItalyLevel ? "#f2a12b" : beakColor;
@@ -1731,6 +1737,12 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
                 <path class="italy-scarf" d="M74 73 C83 79, 94 80, 103 75" stroke="#138a43" stroke-width="6" fill="none" stroke-linecap="round"></path>
                 <path class="italy-scarf" d="M78 80 C87 86, 98 86, 108 80" stroke="#ce2b37" stroke-width="5" fill="none" stroke-linecap="round"></path>
             ` : "";
+    const rioSash = isRioLevel ? `
+                <path class="rio-sash" d="M45 53 C60 72, 78 82, 99 83" stroke="#1f9f68" stroke-width="7" fill="none" stroke-linecap="round"></path>
+                <path class="rio-sash" d="M49 58 C64 74, 81 80, 98 78" stroke="#ffd447" stroke-width="4" fill="none" stroke-linecap="round"></path>
+                <circle class="rio-badge" cx="86" cy="78" r="7" fill="#2e73b8"></circle>
+                <path class="rio-badge-star" d="M86 72 L88 77 L93 77 L89 80 L91 85 L86 82 L81 85 L83 80 L79 77 L84 77 Z" fill="#fff8d6"></path>
+            ` : "";
     return `
         <span class="chicken-sprite">
             <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -1739,6 +1751,7 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
                 <ellipse cx="88" cy="52" rx="18" ry="15" fill="${renderedBodyColor}"></ellipse>
                 ${italyFlagColors}
                 ${parisBeret}
+                ${rioSash}
                 <ellipse cx="40" cy="64" rx="16" ry="13" fill="${renderedWingColor}" opacity="0.95"></ellipse>
                 <circle cx="95" cy="49" r="3.4" fill="#2b2318"></circle>
                 <polygon points="102,55 117,60 102,65" fill="${renderedBeakColor}"></polygon>
