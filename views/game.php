@@ -97,6 +97,19 @@ $initialAppState = [
             </div>
             <div class="pisa-plaza-lines"></div>
         </div>
+        <div class="rio-scene" aria-hidden="true">
+            <div class="rio-bay"></div>
+            <div class="rio-mountain rio-mountain-back"></div>
+            <div class="rio-mountain rio-mountain-front"></div>
+            <div class="christ-statue">
+                <span class="christ-head"></span>
+                <span class="christ-body"></span>
+                <span class="christ-arm christ-arm-left"></span>
+                <span class="christ-arm christ-arm-right"></span>
+                <span class="christ-base"></span>
+            </div>
+            <div class="rio-city-lights"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>
