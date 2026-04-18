@@ -269,6 +269,24 @@ function ensureRoutesTable(PDO $db): void
             'unlock_score' => 5000,
             'display_order' => 7,
         ],
+        [
+            'id' => 8,
+            'name' => 'Level 8',
+            'map_title' => 'Istanbul Skyline',
+            'map_copy' => 'A fast Bosphorus chase with Aya Sofija rising over the old city skyline.',
+            'locked_copy' => 'Unlock by pushing beyond 6200 score.',
+            'status_text' => 'Level 8 started. Istanbul is open, Aya Sofija dominates the skyline and the flock is moving at top speed.',
+            'banner_title' => 'Level 8',
+            'banner_copy' => 'Stizes u Istanbul. Aja Sofija se uzdize iznad grada, a kokoske lete kroz najbrzi ritam u igri.',
+            'start_count' => 11,
+            'spawn_limit' => 18,
+            'spawn_every_ms' => 350,
+            'speed_multiplier' => 1.98,
+            'chicken_class' => '',
+            'accessory' => 'none',
+            'unlock_score' => 6200,
+            'display_order' => 8,
+        ],
     ];
 
     foreach ($defaultRoutes as $route) {
