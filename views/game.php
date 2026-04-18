@@ -110,6 +110,25 @@ $initialAppState = [
             </div>
             <div class="rio-city-lights"></div>
         </div>
+        <div class="istanbul-scene" aria-hidden="true">
+            <div class="istanbul-sky-glow"></div>
+            <div class="istanbul-water"></div>
+            <div class="istanbul-hills istanbul-hills-back"></div>
+            <div class="istanbul-hills istanbul-hills-front"></div>
+            <div class="hagia-sophia">
+                <span class="hagia-minaret hagia-minaret-left-back"></span>
+                <span class="hagia-minaret hagia-minaret-right-back"></span>
+                <span class="hagia-main"></span>
+                <span class="hagia-main-dome"></span>
+                <span class="hagia-semi-dome hagia-semi-dome-left"></span>
+                <span class="hagia-semi-dome hagia-semi-dome-right"></span>
+                <span class="hagia-side-dome hagia-side-dome-left"></span>
+                <span class="hagia-side-dome hagia-side-dome-right"></span>
+                <span class="hagia-minaret hagia-minaret-left-front"></span>
+                <span class="hagia-minaret hagia-minaret-right-front"></span>
+            </div>
+            <div class="istanbul-city-lights"></div>
+        </div>
         <div class="game-area" id="gameArea" aria-label="Chicken shooting game area"></div>
         <div class="ground"></div>
         <div class="level-banner hidden" id="levelBanner" aria-live="polite"></div>
