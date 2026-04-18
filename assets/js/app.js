@@ -75,7 +75,7 @@ const mapPins = [
     { label: 4, x: 320, y: 350, targetLevel: 4, primary: true },
     { label: 6, x: 330, y: 420, targetLevel: 6, primary: true },
     { label: 7, x: 425, y: 315, targetLevel: 7, primary: true },
-    { label: 8, x: 520, y: 330, targetLevel: 1, primary: false },
+    { label: 8, x: 585, y: 145, targetLevel: 8, primary: true },
     { label: 9, x: 650, y: 250, targetLevel: 3, primary: false },
     { label: 10, x: 820, y: 380, targetLevel: 3, primary: false },
     { label: 11, x: 880, y: 360, targetLevel: 3, primary: false },
@@ -557,6 +557,7 @@ function applyLevelTheme() {
     document.body.classList.toggle("level-five", currentLevel === 5);
     document.body.classList.toggle("level-six", currentLevel === 6);
     document.body.classList.toggle("level-seven", currentLevel === 7);
+    document.body.classList.toggle("level-eight", currentLevel === 8);
 }
 
 function getActiveSpawnLimit() {
