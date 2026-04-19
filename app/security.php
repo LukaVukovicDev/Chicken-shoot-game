@@ -334,27 +334,33 @@ function logSecurityEvent(string $event, array $context = []): void
     }
 }
 
-function ensureLoginAllowed(PDO $db, string $username): void
+function fetchLoginAttempt(PDO $db, string $username, string $ip): ?array
 {
-    cleanupExpiredLoginAttempts($db);
-
     $statement = $db->prepare(
-        'SELECT failed_count, blocked_until
+        'SELECT failed_count, blocked_until, last_failed_at
          FROM login_attempts
          WHERE username = :username AND ip_address = :ip_address'
     );
     $statement->execute([
-        ':username' => normalizeUsernameForRateLimit($username),
-        ':ip_address' => getClientIpAddress(),
+        ':username' => $username,
+        ':ip_address' => $ip,
     ]);
+    return $statement->fetch() ?: null;
+}
 
-    $attempt = $statement->fetch();
+function ensureLoginAllowed(PDO $db, string $username): void
+{
+    cleanupExpiredLoginAttempts($db);
+
+    $normalizedUsername = normalizeUsernameForRateLimit($username);
+    $ipAddress = getClientIpAddress();
+    $attempt = fetchLoginAttempt($db, $normalizedUsername, $ipAddress);
     $blockedUntil = (int) ($attempt['blocked_until'] ?? 0);
 
     if ($blockedUntil > time()) {
         logSecurityEvent('login_rate_limit_hit', [
-            'username' => normalizeUsernameForRateLimit($username),
-            'ip' => getClientIpAddress(),
+            'username' => $normalizedUsername,
+            'ip' => $ipAddress,
             'blocked_until' => $blockedUntil,
         ]);
         jsonResponse(['ok' => false, 'message' => 'Too many login attempts. Try again in a few minutes.'], 429);
@@ -367,16 +373,7 @@ function recordFailedLoginAttempt(PDO $db, string $username): void
     $ipAddress = getClientIpAddress();
     $currentTime = time();
 
-    $select = $db->prepare(
-        'SELECT failed_count, last_failed_at
-         FROM login_attempts
-         WHERE username = :username AND ip_address = :ip_address'
-    );
-    $select->execute([
-        ':username' => $normalizedUsername,
-        ':ip_address' => $ipAddress,
-    ]);
-    $attempt = $select->fetch() ?: null;
+    $attempt = fetchLoginAttempt($db, $normalizedUsername, $ipAddress);
 
     $failedCount = 1;
     if ($attempt && ($currentTime - (int) $attempt['last_failed_at']) <= LOGIN_RATE_LIMIT_WINDOW) {
