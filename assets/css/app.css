@@ -684,6 +684,18 @@ body.level-eight .istanbul-scene {
     clip-path: polygon(0 100%, 7% 0, 93% 0, 100% 100%);
 }
 
+.pisa-glow {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 28vh;
+    height: 38vh;
+    background:
+        radial-gradient(ellipse at 68% 28%, rgba(255, 206, 110, 0.24) 0%, rgba(255, 206, 110, 0) 54%),
+        linear-gradient(180deg, rgba(252, 194, 112, 0.16) 0%, rgba(252, 194, 112, 0) 70%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
 .paris-glow {
     position: absolute;
     inset-inline: 0;
