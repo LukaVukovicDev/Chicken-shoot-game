@@ -2542,6 +2542,12 @@ body.level-seven .level-banner {
 .chicken.italy-chicken .italy-flag-body,
 .chicken.italy-chicken .italy-flag-head {
     filter: drop-shadow(0 2px 2px rgba(51, 48, 36, 0.12));
+    animation: italy-flag-shimmer 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes italy-flag-shimmer {
+    from { filter: drop-shadow(0 2px 4px rgba(19, 138, 67, 0.24)); }
+    to { filter: drop-shadow(0 2px 4px rgba(206, 43, 55, 0.24)); }
 }
 
 .chicken.italy-chicken .italy-scarf {
