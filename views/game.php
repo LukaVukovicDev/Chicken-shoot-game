@@ -85,6 +85,7 @@ $initialAppState = [
         </div>
         <div class="pisa-scene" aria-hidden="true">
             <div class="pisa-glow"></div>
+            <div class="pisa-sunbeams"></div>
             <div class="pisa-hills"></div>
             <div class="pisa-cypress pisa-cypress-left"></div>
             <div class="pisa-cypress pisa-cypress-right"></div>
