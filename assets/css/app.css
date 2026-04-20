@@ -684,6 +684,25 @@ body.level-eight .istanbul-scene {
     clip-path: polygon(0 100%, 7% 0, 93% 0, 100% 100%);
 }
 
+.pisa-cypress {
+    position: absolute;
+    bottom: 23vh;
+    width: min(7vw, 58px);
+    min-width: 34px;
+    height: min(30vh, 240px);
+    background: linear-gradient(180deg, #1c4a26 0%, #2a6038 52%, #183820 100%);
+    clip-path: polygon(50% 0, 86% 26%, 74% 22%, 92% 50%, 76% 44%, 94% 70%, 78% 64%, 100% 100%, 0 100%, 22% 64%, 6% 70%, 24% 44%, 8% 50%, 26% 22%, 14% 26%);
+    filter: drop-shadow(4px 8px 8px rgba(16, 38, 20, 0.22));
+}
+
+.pisa-cypress-left {
+    left: 6%;
+}
+
+.pisa-cypress-right {
+    right: 6%;
+}
+
 .pisa-glow {
     position: absolute;
     inset-inline: 0;
