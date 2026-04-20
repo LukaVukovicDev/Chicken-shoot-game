@@ -100,6 +100,7 @@ $initialAppState = [
                 <span class="pisa-tower-base"></span>
             </div>
             <div class="pisa-plaza-lines"></div>
+            <div class="pisa-city-lights"></div>
         </div>
         <div class="rio-scene" aria-hidden="true">
             <div class="rio-bay"></div>

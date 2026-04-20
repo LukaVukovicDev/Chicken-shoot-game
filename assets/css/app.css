@@ -703,6 +703,20 @@ body.level-eight .istanbul-scene {
     right: 6%;
 }
 
+.pisa-city-lights {
+    position: absolute;
+    inset-inline: 5%;
+    bottom: 21vh;
+    height: 7vh;
+    background:
+        radial-gradient(circle at 12% 66%, rgba(255, 218, 112, 0.76) 0 2px, transparent 3px),
+        radial-gradient(circle at 30% 50%, rgba(255, 218, 112, 0.54) 0 2px, transparent 3px),
+        radial-gradient(circle at 54% 68%, rgba(255, 218, 112, 0.7) 0 2px, transparent 3px),
+        radial-gradient(circle at 74% 52%, rgba(255, 218, 112, 0.56) 0 2px, transparent 3px),
+        radial-gradient(circle at 90% 64%, rgba(255, 218, 112, 0.66) 0 2px, transparent 3px);
+    animation: pisa-lights-flicker 3.8s ease-in-out infinite alternate;
+}
+
 .pisa-sunbeams {
     position: absolute;
     inset-inline: 5%;
@@ -2963,6 +2977,11 @@ body.cookie-banner-visible .db-warning {
     100% {
         transform: rotate(4deg) translateY(-1px);
     }
+}
+
+@keyframes pisa-lights-flicker {
+    from { opacity: 0.72; }
+    to { opacity: 1; }
 }
 
 @keyframes pisa-beams-drift {
