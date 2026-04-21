@@ -1746,10 +1746,19 @@ function chickenMarkup(bodyColor, wingColor, beakColor) {
                 <circle class="rio-badge" cx="86" cy="78" r="7" fill="#2e73b8"></circle>
                 <path class="rio-badge-star" d="M86 72 L88 77 L93 77 L89 80 L91 85 L86 82 L81 85 L83 80 L79 77 L84 77 Z" fill="#fff8d6"></path>
             ` : "";
+    const racingHelmet = currentLevel === 4 ? `
+                <g class="racing-helmet">
+                    <path d="M62 16 C74 4, 104 6, 112 22 C116 34, 112 46, 102 48 L68 48 C58 44, 56 30, 62 16 Z" fill="#c0392b"></path>
+                    <path d="M66 20 C77 10, 99 11, 107 24" stroke="rgba(255,255,255,0.28)" stroke-width="4" fill="none" stroke-linecap="round"></path>
+                    <rect x="62" y="38" width="49" height="12" rx="6" fill="#922b21"></rect>
+                    <rect x="70" y="34" width="30" height="16" rx="3" fill="rgba(160,210,240,0.55)"></rect>
+                </g>
+            ` : "";
     return `
         <span class="chicken-sprite">
             <svg viewBox="0 0 120 120" aria-hidden="true">
                 ${winterHat}
+                ${racingHelmet}
                 <ellipse cx="62" cy="68" rx="30" ry="22" fill="${renderedBodyColor}"></ellipse>
                 <ellipse cx="88" cy="52" rx="18" ry="15" fill="${renderedBodyColor}"></ellipse>
                 ${italyFlagColors}
