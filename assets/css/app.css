@@ -955,6 +955,22 @@ body.level-eight .istanbul-scene {
     to { background-position-x: 90px; }
 }
 
+.track-horizon::after {
+    content: "";
+    position: absolute;
+    left: 38%;
+    right: 38%;
+    top: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.78) 0 7px,
+        rgba(0, 0, 0, 0.6) 7px 14px
+    );
+    opacity: 0.35;
+    pointer-events: none;
+}
+
 .sea-horizon {
     position: absolute;
     inset-inline: 0;
