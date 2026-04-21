@@ -917,6 +917,25 @@ body.level-eight .istanbul-scene {
     transform: skewX(-8deg);
 }
 
+.track-horizon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        94deg,
+        transparent 0 18px,
+        rgba(255, 255, 255, 0.055) 18px 20px
+    );
+    background-size: 90px 100%;
+    animation: trackSpeedStreaks 0.45s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes trackSpeedStreaks {
+    from { background-position-x: 0; }
+    to { background-position-x: 90px; }
+}
+
 .sea-horizon {
     position: absolute;
     inset-inline: 0;
