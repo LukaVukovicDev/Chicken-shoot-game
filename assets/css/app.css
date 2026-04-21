@@ -1324,6 +1324,23 @@ body.level-four .ground {
     border-top: 2px solid rgba(208, 217, 228, 0.3);
 }
 
+body.level-four .track-lane {
+    animation: laneDashRush 0.35s linear infinite;
+}
+
+@keyframes laneDashRush {
+    from { background-position-y: 0; }
+    to { background-position-y: 30px; }
+}
+
+body.level-four .racetrack-scene::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 28% at 50% 100%, rgba(255, 140, 50, 0.09), transparent 70%);
+    pointer-events: none;
+}
+
 body.level-five .sun {
     top: 76px;
     right: 9vw;
