@@ -847,6 +847,25 @@ body.level-eight .istanbul-scene {
     transform: scaleX(-1);
 }
 
+.track-stands::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        180deg,
+        rgba(220, 50, 40, 0.0) 0 6px,
+        rgba(220, 50, 40, 0.22) 6px 12px
+    );
+    clip-path: inherit;
+    animation: crowdPulse 2.2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes crowdPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
 .track-light-rig {
     position: absolute;
     left: 50%;
