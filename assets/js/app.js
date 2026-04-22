@@ -2070,6 +2070,7 @@ async function endGame(endedEarly = false) {
     const wasTutorialMode = tutorialMode;
     gameRunning = false;
     gamePaused = false;
+    playSound("gameOver");
     clearTimeout(reloadTimeout);
     cancelAnimationFrame(rafId);
     reloadTimeout = null;
