@@ -1947,6 +1947,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     createEffect(x, y, "muzzle-flash");
+    playSound("shot");
 
     if (ammo <= 0) {
         reload();
@@ -1964,6 +1965,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         score += awardedPoints;
         updateHud();
         setStatus(`Direct hit! +${awardedPoints} points.${describeRacingCombo(racingBonus)}`);
+        playSound("hit");
         chicken.el.classList.add("hit");
         createEffect(x, y, "score-pop", `+${awardedPoints}`);
         if (tutorialMode) {
@@ -1976,6 +1978,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         }
     } else {
         resetRacingCombo();
+        playSound("miss");
         if (!tutorialMode) {
             score = Math.max(0, score - 2);
             updateHud();
