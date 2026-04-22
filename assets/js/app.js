@@ -723,6 +723,7 @@ function maybeAdvanceToNextLevel() {
 
     const nextLevelConfig = getLevelConfig(currentLevel + 1);
     if (nextLevelConfig && nextLevelConfig.id !== currentLevel && score > nextLevelConfig.unlockScore) {
+        playSound("levelUp");
         unlockLevel(nextLevelConfig.id);
         activateLevel(nextLevelConfig.id);
         return true;
