@@ -939,6 +939,7 @@ function beginReloadChallenge() {
     reloadStep = 0;
     renderReloadOverlay("Ammo empty. Use arrow keys or tap the arrows to re-chamber the shotgun.");
     setStatus("Ammo empty. Follow the arrow sequence to reload.");
+    playSound("reload");
 }
 
 function finishReloadChallenge() {
@@ -949,6 +950,7 @@ function finishReloadChallenge() {
     updateHud();
     hideReloadOverlay();
     setStatus("Shotgun ready. Keep shooting.");
+    playSound("reloadDone");
 }
 
 function cancelReloadChallenge() {
