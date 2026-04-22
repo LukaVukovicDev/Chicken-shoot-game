@@ -119,6 +119,49 @@ let levelTransitionTimeout = null;
 let racingComboCount = 0;
 let lastRacingHitAt = 0;
 
+const audioCtx = (() => {
+    try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+})();
+
+function playSound(type) {
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const t = audioCtx.currentTime;
+
+    const noise = (dur, vol, off = 0) => {
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(vol, t + off);
+        g.gain.exponentialRampToValueAtTime(0.001, t + off + dur);
+        src.connect(g); g.connect(audioCtx.destination);
+        src.start(t + off);
+    };
+
+    const tone = (freq, endFreq, dur, vol, wave = "triangle", off = 0) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = wave;
+        osc.frequency.setValueAtTime(freq, t + off);
+        if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t + off + dur);
+        g.gain.setValueAtTime(vol, t + off);
+        g.gain.exponentialRampToValueAtTime(0.001, t + off + dur);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t + off); osc.stop(t + off + dur);
+    };
+
+    if (type === "shot")       { noise(0.14, 0.38); tone(90, 40, 0.14, 0.28, "sine"); }
+    if (type === "hit")        { tone(520, 180, 0.18, 0.38); }
+    if (type === "miss")       { tone(220, 80, 0.2, 0.18, "sawtooth"); }
+    if (type === "reload")     { [0, 0.13, 0.24].forEach((off) => noise(0.06, 0.22, off)); }
+    if (type === "reloadDone") { tone(400, null, 0.08, 0.18, "square"); tone(600, null, 0.14, 0.18, "square", 0.08); }
+    if (type === "levelUp")    { [440, 550, 660].forEach((f, i) => tone(f, null, 0.15, 0.2, "sine", i * 0.1)); }
+    if (type === "gameOver")   { [320, 240, 160, 100].forEach((f, i) => tone(f, f * 0.6, 0.2, 0.18, "sawtooth", i * 0.18)); }
+}
+
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
     "Great. Hit another slower chicken without rushing.",
