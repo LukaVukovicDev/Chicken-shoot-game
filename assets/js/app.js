@@ -165,6 +165,17 @@ function playSound(type) {
 let ambientNodes = [];
 let ambientTimer = null;
 
+function stopAmbient(fadeMs = 500) {
+    clearTimeout(ambientTimer);
+    ambientTimer = null;
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    ambientNodes.forEach(({ gain }) => gain.gain.setTargetAtTime(0, now, fadeMs / 3000));
+    const dying = ambientNodes;
+    setTimeout(() => dying.forEach(({ src }) => { try { src.stop(); } catch {} }), fadeMs + 200);
+    ambientNodes = [];
+}
+
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
     "Great. Hit another slower chicken without rushing.",
