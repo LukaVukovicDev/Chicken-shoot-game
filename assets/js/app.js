@@ -752,6 +752,7 @@ function activateLevel(level, options = {}) {
     clearAllChickens();
     applyLevelTheme();
     updateHud();
+    if (gameRunning) startAmbient(level);
 
     if (showBanner) {
         showLevelBanner(config.bannerTitle, config.bannerCopy);
@@ -2121,6 +2122,7 @@ async function endGame(endedEarly = false) {
     gameRunning = false;
     gamePaused = false;
     playSound("gameOver");
+    stopAmbient();
     clearTimeout(reloadTimeout);
     cancelAnimationFrame(rafId);
     reloadTimeout = null;
