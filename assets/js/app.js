@@ -171,6 +171,36 @@ const ambientThemes = [
     { notes: [160, 213, 267, 320, 267, 213],   wave: "sine",     vol: 0.065, beatMs: 580 },
 ];
 
+function startAmbient(levelId) {
+    if (!audioCtx) return;
+    stopAmbient(300);
+    const theme = ambientThemes[Math.min(levelId - 1, ambientThemes.length - 1)];
+    let step = 0;
+
+    function tick() {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const freq = theme.notes[step % theme.notes.length];
+        const noteDur = (theme.beatMs / 1000) * 0.72;
+        const src = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        src.type = theme.wave;
+        src.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(theme.vol, t + 0.05);
+        gain.gain.setTargetAtTime(0, t + noteDur * 0.55, noteDur * 0.18);
+        src.connect(gain);
+        gain.connect(audioCtx.destination);
+        src.start(t);
+        src.stop(t + noteDur);
+        ambientNodes.push({ src, gain });
+        if (ambientNodes.length > 8) ambientNodes.shift();
+        step++;
+        ambientTimer = setTimeout(tick, theme.beatMs);
+    }
+    ambientTimer = setTimeout(tick, 350);
+}
+
 function stopAmbient(fadeMs = 500) {
     clearTimeout(ambientTimer);
     ambientTimer = null;
