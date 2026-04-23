@@ -165,6 +165,12 @@ function playSound(type) {
 let ambientNodes = [];
 let ambientTimer = null;
 
+const ambientThemes = [
+    { notes: [220, 277, 330, 277],            wave: "sine",     vol: 0.055, beatMs: 900 },
+    { notes: [196, 247, 294, 370, 294],        wave: "triangle", vol: 0.060, beatMs: 720 },
+    { notes: [160, 213, 267, 320, 267, 213],   wave: "sine",     vol: 0.065, beatMs: 580 },
+];
+
 function stopAmbient(fadeMs = 500) {
     clearTimeout(ambientTimer);
     ambientTimer = null;
