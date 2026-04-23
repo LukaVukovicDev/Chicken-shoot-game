@@ -162,6 +162,9 @@ function playSound(type) {
     if (type === "gameOver")   { [320, 240, 160, 100].forEach((f, i) => tone(f, f * 0.6, 0.2, 0.18, "sawtooth", i * 0.18)); }
 }
 
+let ambientNodes = [];
+let ambientTimer = null;
+
 const tutorialSteps = [
     "Click on the clearly marked chicken. This first target is larger and slower to help you get into the game.",
     "Great. Hit another slower chicken without rushing.",
