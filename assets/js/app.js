@@ -2103,7 +2103,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         chicken.alive = false;
         hitCount += 1;
         const racingBonus = getRacingHitBonus();
-        const awardedPoints = chicken.points + racingBonus;
+        const awardedPoints = (chicken.points + racingBonus) * (doublePointsActive ? 2 : 1);
         score += awardedPoints;
         updateHud();
         setStatus(`Direct hit! +${awardedPoints} points.${describeRacingCombo(racingBonus)}`);
@@ -2113,6 +2113,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         if (tutorialMode) {
             advanceTutorialAfterHit();
         }
+        dropPickup(chicken);
         setTimeout(() => removeChicken(chicken.id), 280);
 
         if (maybeAdvanceToNextLevel()) {
@@ -2145,8 +2146,10 @@ function animateChickens(timestamp) {
 
     const deltaMs = Math.min(32, timestamp - lastFrameTime);
     lastFrameTime = timestamp;
-    const deltaSeconds = deltaMs / 1000;
+    const speedScale = slowMoActive ? 0.35 : 1;
+    const deltaSeconds = (deltaMs / 1000) * speedScale;
 
+    tickPickups(deltaMs);
     spawnAccumulator += deltaMs;
     secondAccumulator += deltaMs;
 
@@ -2290,6 +2293,11 @@ function resetRoundState() {
     gamePaused = false;
     currentLevel = 1;
     resetRacingCombo();
+    activePickup = null;
+    pickupTimer = 0;
+    doublePointsActive = false;
+    slowMoActive = false;
+    gameArea.classList.remove("pickup-slow-mo-active", "pickup-double-points-active");
     applyLevelTheme();
 }
 
