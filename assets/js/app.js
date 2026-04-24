@@ -1926,6 +1926,58 @@ function dropPickup(chicken) {
     setTimeout(() => { if (el.parentNode) el.remove(); }, 4500);
 }
 
+function applyPickup(type) {
+    if (type === "ammo-refill") {
+        ammo = magSize;
+        updateHud();
+        setStatus("Ammo refill! Magazine reloaded.");
+        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        return;
+    }
+    if (type === "extra-time") {
+        timeLeft += 5;
+        updateHud();
+        setStatus("Extra time! +5 seconds added.");
+        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        return;
+    }
+    if (type === "slow-mo") {
+        slowMoActive = true;
+        activePickup = "slow-mo";
+        pickupTimer = 3000;
+        setStatus("Slow-Mo active! Everything slows down.");
+        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        gameArea.classList.add("pickup-slow-mo-active");
+    }
+    if (type === "double-points") {
+        doublePointsActive = true;
+        activePickup = "double-points";
+        pickupTimer = 5000;
+        setStatus("Double Points active for 5 seconds!");
+        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        gameArea.classList.add("pickup-double-points-active");
+    }
+}
+
+function tickPickups(deltaMs) {
+    if (!activePickup) return;
+    pickupTimer -= deltaMs;
+    if (pickupTimer <= 0) {
+        if (activePickup === "slow-mo") {
+            slowMoActive = false;
+            gameArea.classList.remove("pickup-slow-mo-active");
+            setStatus("Slow-Mo wore off.");
+        }
+        if (activePickup === "double-points") {
+            doublePointsActive = false;
+            gameArea.classList.remove("pickup-double-points-active");
+            setStatus("Double Points wore off.");
+        }
+        activePickup = null;
+        pickupTimer = 0;
+    }
+}
+
 function getRandomChickenType() {
     const random = Math.random();
     if (random < 0.34) return chickenTypes[0];
