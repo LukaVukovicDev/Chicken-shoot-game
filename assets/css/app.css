@@ -3628,3 +3628,28 @@ body.cookie-banner-visible .db-warning {
         font-size: 1.45rem;
     }
 }
+
+.pickup {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 60;
+    animation: pickup-bob 0.55s ease-in-out infinite alternate;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.55);
+    user-select: none;
+}
+@keyframes pickup-bob {
+    from { transform: translate(-50%, -50%) scale(1); }
+    to   { transform: translate(-50%, -56%) scale(1.07); }
+}
+.pickup-slow-mo       { background: #5b8dee; color: #fff; }
+.pickup-double-points { background: #f5a623; color: #fff; }
+.pickup-ammo-refill   { background: #3dba6e; color: #fff; }
+.pickup-extra-time    { background: #e05c5c; color: #fff; }
+.pickup-slow-mo-active .chicken { filter: hue-rotate(200deg) brightness(0.85); }
+.pickup-double-points-active .score-pop { color: #f5a623; font-size: 1.4em; }
