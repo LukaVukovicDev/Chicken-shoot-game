@@ -1894,6 +1894,38 @@ function createEffect(x, y, className, text = "") {
     setTimeout(() => effect.remove(), 700);
 }
 
+const pickupTypes = ["slow-mo", "double-points", "ammo-refill", "extra-time"];
+const pickupLabels = {
+    "slow-mo": "SLOW-MO  3s",
+    "double-points": "2× POINTS  5s",
+    "ammo-refill": "AMMO REFILL",
+    "extra-time": "+5 SECONDS"
+};
+
+function dropPickup(chicken) {
+    if (tutorialMode || Math.random() > 0.25) {
+        return;
+    }
+    const type = pickupTypes[Math.floor(Math.random() * pickupTypes.length)];
+    const rect = gameArea.getBoundingClientRect();
+    const x = Math.max(40, Math.min(chicken.x - rect.left, rect.width - 40));
+    const y = Math.max(40, Math.min(chicken.y - rect.top + 30, rect.height - 40));
+    const el = document.createElement("div");
+    el.className = `pickup pickup-${type}`;
+    el.textContent = pickupLabels[type];
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    gameArea.appendChild(el);
+    el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (el.parentNode) {
+            el.remove();
+            applyPickup(type);
+        }
+    });
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 4500);
+}
+
 function getRandomChickenType() {
     const random = Math.random();
     if (random < 0.34) return chickenTypes[0];
