@@ -118,6 +118,10 @@ let selectedStartLevel = 1;
 let levelTransitionTimeout = null;
 let racingComboCount = 0;
 let lastRacingHitAt = 0;
+let activePickup = null;
+let pickupTimer = 0;
+let doublePointsActive = false;
+let slowMoActive = false;
 
 const audioCtx = (() => {
     try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
