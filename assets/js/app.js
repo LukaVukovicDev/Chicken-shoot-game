@@ -2151,6 +2151,10 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
             advanceTutorialAfterHit();
         }
         dropPickup(chicken);
+        if (!firstBloodScored) {
+            firstBloodScored = true;
+            createEffect(x, y, "score-pop", "🩸 First Blood!");
+        }
         setTimeout(() => removeChicken(chicken.id), 280);
 
         if (maybeAdvanceToNextLevel()) {
