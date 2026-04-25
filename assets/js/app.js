@@ -122,6 +122,8 @@ let activePickup = null;
 let pickupTimer = 0;
 let doublePointsActive = false;
 let slowMoActive = false;
+let firstBloodScored = false;
+let roundAchievements = [];
 
 const audioCtx = (() => {
     try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
@@ -2297,6 +2299,8 @@ function resetRoundState() {
     pickupTimer = 0;
     doublePointsActive = false;
     slowMoActive = false;
+    firstBloodScored = false;
+    roundAchievements = [];
     gameArea.classList.remove("pickup-slow-mo-active", "pickup-double-points-active");
     applyLevelTheme();
 }
