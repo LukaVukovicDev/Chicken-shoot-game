@@ -365,6 +365,41 @@ function getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, po
     return tips;
 }
 
+function checkAchievements(scoreValue, accuracyValue, hitsValue, comboReached) {
+    const earned = [];
+
+    if (hitsValue >= 1) {
+        earned.push({ id: "first_blood", label: "First Blood", desc: "First hit of the round", icon: "🩸" });
+    }
+    if (accuracyValue >= 90 && hitsValue >= 3) {
+        earned.push({ id: "sniper", label: "Sniper", desc: "90%+ accuracy this round", icon: "🎯" });
+    }
+    if (hitsValue >= 20) {
+        earned.push({ id: "sharpshooter", label: "Sharpshooter", desc: "20 hits in a single round", icon: "🔫" });
+    }
+    if (scoreValue >= 1000) {
+        earned.push({ id: "four_digits", label: "Four Digits", desc: "Scored 1000+ points", icon: "💯" });
+    }
+    if (comboReached) {
+        earned.push({ id: "combo_king", label: "Combo King", desc: "Racing combo triggered", icon: "⚡" });
+    }
+
+    return earned;
+}
+
+function buildAchievementMarkup(achievements) {
+    if (!achievements || achievements.length === 0) return "";
+    const badges = achievements
+        .map((a) => `<span class="achievement-badge" title="${escapeHtml(a.desc)}">${a.icon} ${escapeHtml(a.label)}</span>`)
+        .join("");
+    return `
+        <div class="card-section">
+            <h3>Achievements</h3>
+            <div class="achievement-list">${badges}</div>
+        </div>
+    `;
+}
+
 function buildRoundCoachMarkup(scoreValue, clicksValue, hitsValue, accuracyValue, pointsPerShotValue) {
     const tips = getRoundCoachTips(scoreValue, clicksValue, hitsValue, accuracyValue, pointsPerShotValue);
 
