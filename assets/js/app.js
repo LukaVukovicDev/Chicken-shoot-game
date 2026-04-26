@@ -97,6 +97,7 @@ let cookieConsentState = getCookieConsentState();
 let bestScore = Number(readFunctionalStorage(bestScoreStorageKey) || 0);
 let gameRunning = false;
 let gamePaused = false;
+let autoPausedByVisibility = false;
 let reloadTimeout = null;
 let reloadActive = false;
 let reloadSequence = [];
@@ -123,6 +124,7 @@ let pickupTimer = 0;
 let doublePointsActive = false;
 let slowMoActive = false;
 let firstBloodScored = false;
+let racingComboEverTriggered = false;
 let roundAchievements = [];
 
 const audioCtx = (() => {
@@ -733,6 +735,7 @@ function getRacingHitBonus() {
         return 0;
     }
 
+    racingComboEverTriggered = true;
     return Math.min(48, racingComboCount * racingComboBonusPoints);
 }
 
@@ -1663,6 +1666,15 @@ function openPauseMenu() {
     attachOverlayHandlers();
 }
 
+function autoPauseRound(reason = "hidden") {
+    if (!gameRunning || gamePaused) {
+        return;
+    }
+    autoPausedByVisibility = true;
+    openPauseMenu();
+    setStatus(reason === "blur" ? "Game auto-paused because the window lost focus." : "Game auto-paused because the tab is hidden.");
+}
+
 function attachOverlayHandlers() {
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
@@ -1821,6 +1833,7 @@ function resumeGameFromPause() {
         return;
     }
     gamePaused = false;
+    autoPausedByVisibility = false;
     lastFrameTime = 0;
     overlay.classList.add("hidden");
     setStatus("Back in the hunt.");
@@ -2339,6 +2352,7 @@ function resetRoundState() {
     doublePointsActive = false;
     slowMoActive = false;
     firstBloodScored = false;
+    racingComboEverTriggered = false;
     roundAchievements = [];
     gameArea.classList.remove("pickup-slow-mo-active", "pickup-double-points-active");
     applyLevelTheme();
@@ -2425,6 +2439,14 @@ window.addEventListener("touchmove", (event) => {
 }, { passive: true });
 
 window.addEventListener("resize", updateViewport, { passive: true });
+window.addEventListener("blur", () => {
+    autoPauseRound("blur");
+});
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        autoPauseRound("hidden");
+    }
+});
 window.addEventListener("keydown", (event) => {
     if (reloadActive && !gamePaused && isArrowKey(event.key)) {
         event.preventDefault();
