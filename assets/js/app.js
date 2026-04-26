@@ -439,6 +439,34 @@ function normalizeGameplaySettings(rawSettings) {
     };
 }
 
+function isFullscreenActive() {
+    return Boolean(document.fullscreenElement);
+}
+
+async function setFullscreenEnabled(shouldEnable) {
+    const nextValue = Boolean(shouldEnable);
+    if (nextValue === isFullscreenActive()) {
+        return { ok: true, message: "" };
+    }
+
+    try {
+        if (nextValue) {
+            if (!document.documentElement.requestFullscreen) {
+                return { ok: false, message: "Fullscreen is not supported on this browser." };
+            }
+            await document.documentElement.requestFullscreen();
+        } else {
+            if (!document.exitFullscreen) {
+                return { ok: false, message: "Fullscreen exit is not supported on this browser." };
+            }
+            await document.exitFullscreen();
+        }
+        return { ok: true, message: "" };
+    } catch (error) {
+        return { ok: false, message: "Fullscreen change was blocked by the browser." };
+    }
+}
+
 function getCookieValue(name) {
     const encodedName = `${encodeURIComponent(name)}=`;
     const match = document.cookie
@@ -1520,6 +1548,30 @@ function getSettingsOverlayMarkup(feedback = null) {
                 </div>
                 <div class="settings-stack">
                     <div class="card-section">
+                        <h3>Gameplay</h3>
+                        <p>Tune aiming and sound feedback, then switch fullscreen mode for better focus.</p>
+                        <form id="gameplaySettingsForm">
+                            <div class="field-group settings-range-field">
+                                <label for="settingsCrosshairSensitivity">Crosshair sensitivity <span id="settingsCrosshairValue" class="settings-range-value">${Math.round(gameplaySettings.crosshairSensitivity * 100)}%</span></label>
+                                <input id="settingsCrosshairSensitivity" name="crosshair_sensitivity" type="range" min="50" max="180" step="5" value="${Math.round(gameplaySettings.crosshairSensitivity * 100)}">
+                            </div>
+                            <div class="field-group settings-range-field">
+                                <label for="settingsMasterVolume">Master volume <span id="settingsVolumeValue" class="settings-range-value">${Math.round(gameplaySettings.masterVolume * 100)}%</span></label>
+                                <input id="settingsMasterVolume" name="master_volume" type="range" min="0" max="100" step="5" value="${Math.round(gameplaySettings.masterVolume * 100)}">
+                            </div>
+                            <label class="settings-toggle" for="settingsFullscreenEnabled">
+                                <div>
+                                    <strong>Fullscreen mode</strong>
+                                    <p>Switch between fullscreen and window mode directly from settings.</p>
+                                </div>
+                                <input id="settingsFullscreenEnabled" name="fullscreen_enabled" type="checkbox"${(isFullscreenActive() || gameplaySettings.fullscreenEnabled) ? " checked" : ""}>
+                            </label>
+                            <div class="button-row button-row-spaced">
+                                <button class="button" type="submit">Save Gameplay Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-section">
                         <h3>Cookie Preferences</h3>
                         <p>${escapeHtml(getCookiePreferenceDescription())}</p>
                         <form id="cookieSettingsForm">
@@ -1719,6 +1771,7 @@ function attachOverlayHandlers() {
     const registerForm = document.getElementById("registerForm");
     const profileForm = document.getElementById("profileForm");
     const passwordForm = document.getElementById("passwordForm");
+    const gameplaySettingsForm = document.getElementById("gameplaySettingsForm");
     const cookieSettingsForm = document.getElementById("cookieSettingsForm");
     const loginButton = overlay.querySelector('[data-action="openLogin"]');
     const registerButton = overlay.querySelector('[data-action="openRegister"]');
@@ -1811,6 +1864,52 @@ function attachOverlayHandlers() {
             appState.leaderboard = response.leaderboard || appState.leaderboard;
             appState.analytics = response.analytics || appState.analytics;
             showSettingsOverlay(response);
+        });
+    }
+
+    if (gameplaySettingsForm) {
+        const sensitivityInput = document.getElementById("settingsCrosshairSensitivity");
+        const volumeInput = document.getElementById("settingsMasterVolume");
+        const fullscreenInput = document.getElementById("settingsFullscreenEnabled");
+        const sensitivityValue = document.getElementById("settingsCrosshairValue");
+        const volumeValue = document.getElementById("settingsVolumeValue");
+
+        const syncGameplayValueLabels = () => {
+            if (sensitivityValue && sensitivityInput) {
+                sensitivityValue.textContent = `${sensitivityInput.value}%`;
+            }
+            if (volumeValue && volumeInput) {
+                volumeValue.textContent = `${volumeInput.value}%`;
+            }
+        };
+
+        sensitivityInput?.addEventListener("input", syncGameplayValueLabels);
+        volumeInput?.addEventListener("input", syncGameplayValueLabels);
+        syncGameplayValueLabels();
+
+        gameplaySettingsForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            gameplaySettings = normalizeGameplaySettings({
+                crosshairSensitivity: Number(sensitivityInput?.value || 100) / 100,
+                masterVolume: Number(volumeInput?.value || 70) / 100,
+                fullscreenEnabled: Boolean(fullscreenInput?.checked)
+            });
+            queueCrosshairRender();
+            persistGameplaySettings();
+
+            const fullscreenResult = await setFullscreenEnabled(gameplaySettings.fullscreenEnabled);
+            if (!fullscreenResult.ok) {
+                gameplaySettings.fullscreenEnabled = isFullscreenActive();
+                persistGameplaySettings();
+            }
+
+            showSettingsOverlay({
+                ok: fullscreenResult.ok,
+                message: fullscreenResult.ok
+                    ? "Gameplay settings saved."
+                    : `Gameplay settings saved. ${fullscreenResult.message}`
+            });
         });
     }
 
@@ -2493,6 +2592,10 @@ window.addEventListener("touchmove", (event) => {
 window.addEventListener("resize", updateViewport, { passive: true });
 window.addEventListener("blur", () => {
     autoPauseRound("blur");
+});
+document.addEventListener("fullscreenchange", () => {
+    gameplaySettings.fullscreenEnabled = isFullscreenActive();
+    persistGameplaySettings();
 });
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) {

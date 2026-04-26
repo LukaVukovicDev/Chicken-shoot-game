@@ -2814,6 +2814,29 @@ body.cookie-banner-visible .db-warning {
     flex-shrink: 0;
 }
 
+.settings-range-field {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.settings-range-field label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.settings-range-value {
+    font-weight: 700;
+    color: #ffe895;
+}
+
+.settings-range-field input[type="range"] {
+    width: 100%;
+    accent-color: #ffcb45;
+}
+
 .settings-badge {
     display: inline-flex;
     align-items: center;
