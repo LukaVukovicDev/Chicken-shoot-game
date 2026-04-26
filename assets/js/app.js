@@ -45,9 +45,10 @@ const totalTime = 45;
 const magSize = 6;
 const bestScoreStorageKey = "chicken-shooting-best";
 const levelUnlockStorageKey = "chicken-shooting-unlocked-level";
+const gameplaySettingsStorageKey = "chicken-shooting-gameplay-settings";
 const cookieConsentStorageKey = "chicken-shooting-cookie-consent";
 const cookieConsentMaxAge = 60 * 60 * 24 * 180;
-const functionalStorageKeys = [bestScoreStorageKey, levelUnlockStorageKey];
+const functionalStorageKeys = [bestScoreStorageKey, levelUnlockStorageKey, gameplaySettingsStorageKey];
 const racingComboWindowMs = 1400;
 const racingComboBonusPoints = 12;
 const reloadSequenceLength = 4;
@@ -87,6 +88,11 @@ const viewport = {
     topInset: 96,
     bottomInset: 110
 };
+const defaultGameplaySettings = {
+    crosshairSensitivity: 1,
+    masterVolume: 0.7,
+    fullscreenEnabled: false
+};
 
 let score = 0;
 let timeLeft = totalTime;
@@ -95,6 +101,7 @@ let clickCount = 0;
 let hitCount = 0;
 let cookieConsentState = getCookieConsentState();
 let bestScore = Number(readFunctionalStorage(bestScoreStorageKey) || 0);
+let gameplaySettings = loadGameplaySettings();
 let gameRunning = false;
 let gamePaused = false;
 let autoPausedByVisibility = false;
@@ -143,7 +150,7 @@ function playSound(type) {
         const src = audioCtx.createBufferSource();
         src.buffer = buf;
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(vol, t + off);
+        g.gain.setValueAtTime(vol * gameplaySettings.masterVolume, t + off);
         g.gain.exponentialRampToValueAtTime(0.001, t + off + dur);
         src.connect(g); g.connect(audioCtx.destination);
         src.start(t + off);
@@ -155,7 +162,7 @@ function playSound(type) {
         osc.type = wave;
         osc.frequency.setValueAtTime(freq, t + off);
         if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t + off + dur);
-        g.gain.setValueAtTime(vol, t + off);
+        g.gain.setValueAtTime(vol * gameplaySettings.masterVolume, t + off);
         g.gain.exponentialRampToValueAtTime(0.001, t + off + dur);
         osc.connect(g); g.connect(audioCtx.destination);
         osc.start(t + off); osc.stop(t + off + dur);
@@ -195,7 +202,7 @@ function startAmbient(levelId) {
         src.type = theme.wave;
         src.frequency.setValueAtTime(freq, t);
         gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(theme.vol, t + 0.05);
+        gain.gain.linearRampToValueAtTime(theme.vol * gameplaySettings.masterVolume, t + 0.05);
         gain.gain.setTargetAtTime(0, t + noteDur * 0.55, noteDur * 0.18);
         src.connect(gain);
         gain.connect(audioCtx.destination);
@@ -419,6 +426,19 @@ function formatMetric(value, digits = 1) {
     return Number(value || 0).toFixed(digits);
 }
 
+function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function normalizeGameplaySettings(rawSettings) {
+    const next = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+    return {
+        crosshairSensitivity: clampNumber(Number(next.crosshairSensitivity) || defaultGameplaySettings.crosshairSensitivity, 0.5, 1.8),
+        masterVolume: clampNumber(Number(next.masterVolume) || defaultGameplaySettings.masterVolume, 0, 1),
+        fullscreenEnabled: Boolean(next.fullscreenEnabled)
+    };
+}
+
 function getCookieValue(name) {
     const encodedName = `${encodeURIComponent(name)}=`;
     const match = document.cookie
@@ -475,6 +495,22 @@ function writeFunctionalStorage(key, value) {
     } catch (error) {
         // Ignore browser storage failures and continue without persistence.
     }
+}
+
+function loadGameplaySettings() {
+    const serialized = readFunctionalStorage(gameplaySettingsStorageKey);
+    if (!serialized) {
+        return normalizeGameplaySettings(defaultGameplaySettings);
+    }
+    try {
+        return normalizeGameplaySettings(JSON.parse(serialized));
+    } catch (error) {
+        return normalizeGameplaySettings(defaultGameplaySettings);
+    }
+}
+
+function persistGameplaySettings() {
+    writeFunctionalStorage(gameplaySettingsStorageKey, JSON.stringify(gameplaySettings));
 }
 
 function removeFunctionalStorage(key) {
@@ -563,9 +599,11 @@ function applyCookiePreferenceState({ clearStoredData = false, refreshOverlay = 
         if (gameRunning || gamePaused) {
             persistBestScore();
             persistUnlockedLevel();
+            persistGameplaySettings();
         } else {
             bestScore = Number(readFunctionalStorage(bestScoreStorageKey) || 0);
             maxUnlockedLevel = Math.min(maxLevel, Math.max(1, Number(readFunctionalStorage(levelUnlockStorageKey) || 1), computeUnlockedLevelFromScore(bestScore)));
+            gameplaySettings = loadGameplaySettings();
             selectedStartLevel = Math.min(maxUnlockedLevel, Math.max(1, selectedStartLevel));
             currentLevel = selectedStartLevel;
             persistUnlockedLevel();
@@ -573,6 +611,7 @@ function applyCookiePreferenceState({ clearStoredData = false, refreshOverlay = 
     } else if (!gameRunning && !gamePaused) {
         bestScore = 0;
         maxUnlockedLevel = 1;
+        gameplaySettings = normalizeGameplaySettings(defaultGameplaySettings);
         selectedStartLevel = 1;
         currentLevel = 1;
     }
@@ -2136,8 +2175,9 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
     }
 
     const rect = gameArea.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const aimed = getAimedCoordinates(clientX, clientY);
+    const x = aimed.x - rect.left;
+    const y = aimed.y - rect.top;
     createEffect(x, y, "muzzle-flash");
     playSound("shot");
 
@@ -2405,6 +2445,16 @@ function queueCrosshairRender() {
     });
 }
 
+function getAimedCoordinates(clientX, clientY) {
+    const sensitivity = gameplaySettings.crosshairSensitivity;
+    const centerX = viewport.width / 2;
+    const centerY = viewport.height / 2;
+    return {
+        x: clampNumber(centerX + ((clientX - centerX) * sensitivity), 0, viewport.width),
+        y: clampNumber(centerY + ((clientY - centerY) * sensitivity), 0, viewport.height)
+    };
+}
+
 function centerCrosshair() {
     pointerX = window.innerWidth / 2;
     pointerY = window.innerHeight / 2;
@@ -2423,8 +2473,9 @@ reloadOverlay.addEventListener("click", (event) => {
 });
 
 window.addEventListener("pointermove", (event) => {
-    pointerX = event.clientX;
-    pointerY = event.clientY;
+    const aimed = getAimedCoordinates(event.clientX, event.clientY);
+    pointerX = aimed.x;
+    pointerY = aimed.y;
     queueCrosshairRender();
 }, { passive: true });
 
@@ -2433,8 +2484,9 @@ window.addEventListener("touchmove", (event) => {
     if (!touch) {
         return;
     }
-    pointerX = touch.clientX;
-    pointerY = touch.clientY;
+    const aimed = getAimedCoordinates(touch.clientX, touch.clientY);
+    pointerX = aimed.x;
+    pointerY = aimed.y;
     queueCrosshairRender();
 }, { passive: true });
 
