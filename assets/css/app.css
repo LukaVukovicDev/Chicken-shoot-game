@@ -2684,6 +2684,56 @@ body.level-seven .level-banner {
     animation: float-score 0.7s ease forwards;
 }
 
+.personal-best-splash {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    z-index: 60;
+    pointer-events: none;
+    min-width: min(82vw, 520px);
+    padding: 14px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 206, 71, 0.95) 0%, rgba(255, 151, 66, 0.95) 100%);
+    color: #2c1200;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.34);
+    transform: translate3d(-50%, -50%, 0) scale(0.85);
+    opacity: 0;
+}
+
+.personal-best-splash.active {
+    animation: personal-best-pop 1.45s cubic-bezier(0.22, 0.91, 0.2, 1) forwards;
+}
+
+.personal-best-kicker {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.personal-best-title {
+    display: block;
+    margin-top: 2px;
+    font-size: clamp(1.2rem, 3.1vw, 2rem);
+}
+
+.personal-best-score {
+    display: block;
+    margin-top: 6px;
+    font-weight: 700;
+    color: rgba(38, 16, 3, 0.92);
+}
+
+.personal-best-inline {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #2f1700;
+    background: linear-gradient(135deg, rgba(255, 219, 112, 0.92) 0%, rgba(255, 158, 82, 0.9) 100%);
+}
+
 .warning {
     color: var(--danger);
 }
@@ -2908,6 +2958,28 @@ body.cookie-banner-visible .db-warning {
     to {
         opacity: 0;
         transform: translate3d(-50%, -50%, 0) translateY(-42px);
+    }
+}
+
+@keyframes personal-best-pop {
+    0% {
+        opacity: 0;
+        transform: translate3d(-50%, -50%, 0) scale(0.72);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translate3d(-50%, -50%, 0) scale(1.04);
+    }
+
+    72% {
+        opacity: 1;
+        transform: translate3d(-50%, -50%, 0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(-50%, -62%, 0) scale(0.94);
     }
 }
 

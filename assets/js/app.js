@@ -2082,6 +2082,21 @@ function createEffect(x, y, className, text = "") {
     setTimeout(() => effect.remove(), 700);
 }
 
+function showPersonalBestSplash(scoreValue) {
+    const splash = document.createElement("div");
+    splash.className = "personal-best-splash";
+    splash.innerHTML = `
+        <span class="personal-best-kicker">NEW RECORD</span>
+        <strong class="personal-best-title">New Personal Best!</strong>
+        <span class="personal-best-score">${scoreValue} points</span>
+    `;
+    gameArea.appendChild(splash);
+    requestAnimationFrame(() => {
+        splash.classList.add("active");
+    });
+    setTimeout(() => splash.remove(), 1800);
+}
+
 const pickupTypes = ["slow-mo", "double-points", "ammo-refill", "extra-time"];
 const pickupLabels = {
     "slow-mo": "SLOW-MO  3s",
@@ -2403,6 +2418,7 @@ async function endGame(endedEarly = false) {
     const finalPointsPerShot = calculatePointsPerShot(finalScore, finalClicks);
     const playerLevel = classifyPlayerLevel(finalScore, finalAccuracy, finalPointsPerShot, finalHits);
     const wasTutorialMode = tutorialMode;
+    const reachedNewPersonalBest = !wasTutorialMode && finalScore > bestScore;
     gameRunning = false;
     gamePaused = false;
     playSound("gameOver");
@@ -2416,7 +2432,7 @@ async function endGame(endedEarly = false) {
     spawnAccumulator = 0;
     secondAccumulator = 0;
 
-    if (!wasTutorialMode && finalScore > bestScore) {
+    if (reachedNewPersonalBest) {
         bestScore = finalScore;
         persistBestScore();
     }
@@ -2438,10 +2454,14 @@ async function endGame(endedEarly = false) {
     }
 
     setOverlayMode("default");
+    if (reachedNewPersonalBest) {
+        showPersonalBestSplash(finalScore);
+    }
     overlay.innerHTML = `
         <div class="overlay-card">
             ${buildOverlayHeader(endedEarly ? "Game Ended" : "Time Up", "Round summary, performance stats and the fastest way back into the hunt.", "Chicken Shooting")}
             <p>You scored <strong>${finalScore}</strong> points. Accuracy analytics for this round are ready below, and ${appState.user ? "your round was saved to the leaderboard." : "you can log in to save future rounds to the leaderboard."}</p>
+            ${reachedNewPersonalBest ? `<p class="personal-best-inline">New Personal Best! <strong>${finalScore}</strong></p>` : ""}
             <p><strong>Reached level:</strong> ${currentLevel}</p>
             <p><strong>Unlocked routes:</strong> ${maxUnlockedLevel} / ${maxLevel}</p>
             <p><strong>Nivo igraca:</strong> ${playerLevel.level}<br>${playerLevel.summary}</p>
