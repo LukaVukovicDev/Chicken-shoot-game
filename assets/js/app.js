@@ -2097,6 +2097,39 @@ function showPersonalBestSplash(scoreValue) {
     setTimeout(() => splash.remove(), 1800);
 }
 
+function getEventClientPoint(event) {
+    if (typeof event.clientX === "number" && typeof event.clientY === "number") {
+        return { x: event.clientX, y: event.clientY };
+    }
+    const touch = event.touches?.[0] || event.changedTouches?.[0];
+    if (!touch) {
+        return null;
+    }
+    return { x: touch.clientX, y: touch.clientY };
+}
+
+function bindPrimaryPress(element, handler) {
+    if (window.PointerEvent) {
+        element.addEventListener("pointerdown", (event) => {
+            if (event.pointerType === "mouse" && event.button !== 0) {
+                return;
+            }
+            handler(event);
+        });
+        return;
+    }
+
+    element.addEventListener("mousedown", (event) => {
+        if (event.button !== 0) {
+            return;
+        }
+        handler(event);
+    });
+    element.addEventListener("touchstart", (event) => {
+        handler(event);
+    }, { passive: true });
+}
+
 const pickupTypes = ["slow-mo", "double-points", "ammo-refill", "extra-time"];
 const pickupLabels = {
     "slow-mo": "SLOW-MO  3s",
@@ -2119,7 +2152,7 @@ function dropPickup(chicken) {
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
     gameArea.appendChild(el);
-    el.addEventListener("click", (e) => {
+    bindPrimaryPress(el, (e) => {
         e.stopPropagation();
         if (el.parentNode) {
             el.remove();
@@ -2235,9 +2268,13 @@ function spawnChicken(options = {}) {
         tutorialTarget: Boolean(options.tutorialTarget)
     };
 
-    chicken.addEventListener("click", (event) => {
+    bindPrimaryPress(chicken, (event) => {
+        const point = getEventClientPoint(event);
+        if (!point) {
+            return;
+        }
         event.stopPropagation();
-        shootAt(event.clientX, event.clientY, data, true);
+        shootAt(point.x, point.y, data, true);
     });
 
     chickens.set(id, data);
@@ -2582,8 +2619,14 @@ function centerCrosshair() {
 
 menuControl.addEventListener("click", openPauseMenu);
 restartControl.addEventListener("click", restartGame);
-gameArea.addEventListener("click", (event) => shootAt(event.clientX, event.clientY, null, false));
-reloadOverlay.addEventListener("click", (event) => {
+bindPrimaryPress(gameArea, (event) => {
+    const point = getEventClientPoint(event);
+    if (!point) {
+        return;
+    }
+    shootAt(point.x, point.y, null, false);
+});
+bindPrimaryPress(reloadOverlay, (event) => {
     const button = event.target.closest("[data-reload-key]");
     if (!button) {
         return;
