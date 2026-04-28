@@ -66,6 +66,49 @@ const chickenTypes = [
     { label: "Rose Chicken", colors: ["#f2a49b", "#e88374", "#f3b74e"], speedMin: 230, speedMax: 280, pointsMin: 38, pointsMax: 46 },
     { label: "Blue Chicken", colors: ["#d9eef9", "#afdae9", "#ef9b29"], speedMin: 275, speedMax: 340, pointsMin: 46, pointsMax: 56 }
 ];
+
+// Power-up types
+const POWERUP_TYPES = [
+    {
+        id: 'slowmo',
+        label: 'Slow-Mo',
+        color: '#6cf',
+        duration: 3000,
+        description: 'Sve usporava 3 sekunde'
+    },
+    {
+        id: 'doublepoints',
+        label: 'Double Points',
+        color: '#fc6',
+        duration: 5000,
+        description: '2× poeni 5 sekundi'
+    },
+    {
+        id: 'ammorefill',
+        label: 'Ammo Refill',
+        color: '#9f6',
+        duration: 0,
+        description: 'Instant reload'
+    },
+    {
+        id: 'extratime',
+        label: 'Extra Time',
+        color: '#f69',
+        duration: 0,
+        description: '+5 sekundi'
+    }
+];
+
+// Power-up drop chance (e.g. 10%)
+const POWERUP_DROP_CHANCE = 0.10;
+
+// Active power-ups on field
+let activePowerups = [];
+
+// Utility: random power-up
+function getRandomPowerupType() {
+    return POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+}
 let levelConfigs = {};
 let maxLevel = 1;
 const mapPins = [
