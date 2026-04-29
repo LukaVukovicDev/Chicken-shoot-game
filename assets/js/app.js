@@ -2173,67 +2173,76 @@ function bindPrimaryPress(element, handler) {
     }, { passive: true });
 }
 
-const pickupTypes = ["slow-mo", "double-points", "ammo-refill", "extra-time"];
-const pickupLabels = {
-    "slow-mo": "SLOW-MO  3s",
-    "double-points": "2× POINTS  5s",
-    "ammo-refill": "AMMO REFILL",
-    "extra-time": "+5 SECONDS"
-};
 
-function dropPickup(chicken) {
-    if (tutorialMode || Math.random() > 0.25) {
-        return;
-    }
-    const type = pickupTypes[Math.floor(Math.random() * pickupTypes.length)];
+// New: Power-up rendering and logic (object-oriented)
+function spawnPowerup(chicken, powerupType) {
     const rect = gameArea.getBoundingClientRect();
-    const x = Math.max(40, Math.min(chicken.x - rect.left, rect.width - 40));
-    const y = Math.max(40, Math.min(chicken.y - rect.top + 30, rect.height - 40));
-    const el = document.createElement("div");
-    el.className = `pickup pickup-${type}`;
-    el.textContent = pickupLabels[type];
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    gameArea.appendChild(el);
-    bindPrimaryPress(el, (e) => {
-        e.stopPropagation();
-        if (el.parentNode) {
-            el.remove();
-            applyPickup(type);
-        }
+    const x = Math.max(40, Math.min((chicken.x || 0) - rect.left, rect.width - 40));
+    const y = Math.max(40, Math.min((chicken.y || 0) - rect.top + 30, rect.height - 40));
+    const powerupEl = document.createElement("div");
+    powerupEl.className = `powerup powerup-${powerupType.id}`;
+    powerupEl.textContent = powerupType.label;
+    powerupEl.style.background = powerupType.color;
+    powerupEl.style.left = `${x}px`;
+    powerupEl.style.top = `${y}px`;
+    powerupEl.dataset.type = powerupType.id;
+    gameArea.appendChild(powerupEl);
+    // Animate drop
+    powerupEl.animate([
+        { transform: `translateY(-20px)`, opacity: 0.7 },
+        { transform: `translateY(0px)`, opacity: 1 }
+    ], {
+        duration: 400,
+        fill: 'forwards',
+        easing: 'ease-out'
     });
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 4500);
+    // Click to collect
+    powerupEl.addEventListener('click', () => {
+        collectPowerup(powerupType, powerupEl);
+    });
+    // Auto-remove after 4s if not picked
+    setTimeout(() => {
+        if (powerupEl.parentNode) powerupEl.remove();
+    }, 4000);
+    activePowerups.push({ el: powerupEl, type: powerupType });
 }
 
-function applyPickup(type) {
-    if (type === "ammo-refill") {
+function collectPowerup(powerupType, el) {
+    if (el && el.parentNode) el.remove();
+    applyPowerupEffect(powerupType);
+}
+
+function applyPowerupEffect(powerupType) {
+    const cx = viewport.width / 2;
+    const cy = viewport.height / 2 - 60;
+    if (powerupType.id === 'ammorefill') {
         ammo = magSize;
         updateHud();
         setStatus("Ammo refill! Magazine reloaded.");
-        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        createEffect(cx, cy, "score-pop", powerupType.label);
         return;
     }
-    if (type === "extra-time") {
+    if (powerupType.id === 'extratime') {
         timeLeft += 5;
         updateHud();
         setStatus("Extra time! +5 seconds added.");
-        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        createEffect(cx, cy, "score-pop", powerupType.label);
         return;
     }
-    if (type === "slow-mo") {
+    if (powerupType.id === 'slowmo') {
         slowMoActive = true;
-        activePickup = "slow-mo";
-        pickupTimer = 3000;
+        activePickup = 'slowmo';
+        pickupTimer = powerupType.duration;
         setStatus("Slow-Mo active! Everything slows down.");
-        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        createEffect(cx, cy, "score-pop", powerupType.label);
         gameArea.classList.add("pickup-slow-mo-active");
     }
-    if (type === "double-points") {
+    if (powerupType.id === 'doublepoints') {
         doublePointsActive = true;
-        activePickup = "double-points";
-        pickupTimer = 5000;
-        setStatus("Double Points active for 5 seconds!");
-        createEffect(viewport.width / 2, viewport.height / 2 - 60, "score-pop", pickupLabels[type]);
+        activePickup = 'doublepoints';
+        pickupTimer = powerupType.duration;
+        setStatus("Double Points active! 2× points for 5s.");
+        createEffect(cx, cy, "score-pop", powerupType.label);
         gameArea.classList.add("pickup-double-points-active");
     }
 }
@@ -2242,12 +2251,12 @@ function tickPickups(deltaMs) {
     if (!activePickup) return;
     pickupTimer -= deltaMs;
     if (pickupTimer <= 0) {
-        if (activePickup === "slow-mo") {
+        if (activePickup === "slowmo") {
             slowMoActive = false;
             gameArea.classList.remove("pickup-slow-mo-active");
             setStatus("Slow-Mo wore off.");
         }
-        if (activePickup === "double-points") {
+        if (activePickup === "doublepoints") {
             doublePointsActive = false;
             gameArea.classList.remove("pickup-double-points-active");
             setStatus("Double Points wore off.");
