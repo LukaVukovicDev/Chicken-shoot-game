@@ -22,6 +22,7 @@ $initialAppState = [
         <div class="hud">
             <div class="panel"><span class="panel-label">Score</span><span class="panel-value" id="score">0</span></div>
             <div class="panel"><span class="panel-label">Time Left</span><span class="panel-value" id="time">45</span></div>
+            <div class="combo-badge hidden" id="comboBadge"></div>
             <div class="panel"><span class="panel-label">Ammo</span><span class="panel-value" id="ammo">6 / 6</span></div>
             <div class="panel"><span class="panel-label">Clicks</span><span class="panel-value" id="clickCount">0</span></div>
             <div class="panel"><span class="panel-label">Hits</span><span class="panel-value" id="hits">0</span></div>
@@ -29,6 +30,10 @@ $initialAppState = [
             <div class="panel"><span class="panel-label">PPS</span><span class="panel-value" id="pointsPerShot">0.00</span></div>
             <div class="panel"><span class="panel-label">Best</span><span class="panel-value" id="best">0</span></div>
             <div class="panel"><span class="panel-label">Player</span><span class="panel-value" id="playerName"><?= escapeHtml($sessionUser['nickname'] ?? 'Guest') ?></span></div>
+            <div class="heat-bar-panel" id="heatBar" data-heat="0">
+                <span class="heat-bar-label">Streak: 0</span>
+                <div class="heat-bar-track"><div class="heat-bar-fill"></div></div>
+            </div>
             <button class="button secondary hud-button menu-button" id="menuControl" type="button">Menu</button>
             <button class="button secondary hud-button restart-button" id="restartControl" type="button">Restart</button>
         </div>

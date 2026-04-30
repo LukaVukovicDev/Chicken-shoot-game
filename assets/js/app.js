@@ -978,6 +978,8 @@ function updateHud() {
     timeEl.classList.toggle("urgent",   timeLeft <= 10 && timeLeft > 5);
     timeEl.classList.toggle("critical", timeLeft <= 5);
 
+    renderHeatBar();
+
     // Racing combo badge
     const comboActive = isRacingLevel() && racingComboCount >= 2
         && (Date.now() - lastRacingHitAt) < racingComboWindowMs;
