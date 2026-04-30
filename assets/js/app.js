@@ -2686,6 +2686,9 @@ function resetRoundState() {
     firstBloodScored = false;
     racingComboEverTriggered = false;
     roundAchievements = [];
+    streakCount = 0;
+    heatLevel = 0;
+    applyHeatClasses(0);
     gameArea.classList.remove("pickup-slow-mo-active", "pickup-double-points-active");
     applyLevelTheme();
 }
