@@ -3748,3 +3748,88 @@ body.cookie-banner-visible .db-warning {
 .pickup-extra-time    { background: #e05c5c; color: #fff; }
 .pickup-slow-mo-active .chicken { filter: hue-rotate(200deg) brightness(0.85); }
 .pickup-double-points-active .score-pop { color: #f5a623; font-size: 1.4em; }
+
+/* Timer urgency */
+@keyframes timer-pulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.18); }
+}
+#time.urgent   { color: #f59e0b; }
+#time.critical { color: var(--danger); animation: timer-pulse 0.6s ease-in-out infinite; }
+
+/* Racing combo badge */
+.combo-badge {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b35, #f7c59f);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 3px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    pointer-events: none;
+    z-index: 30;
+    transition: opacity 0.25s;
+}
+.combo-badge.hidden { display: none; }
+
+/* ── Streak Heat Bar ───────────────────────────────────────────────── */
+.heat-bar-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 10px;
+    background: var(--panel);
+    border-radius: 8px;
+    min-width: 110px;
+}
+.heat-bar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+}
+.heat-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.heat-bar-fill {
+    height: 100%;
+    width: var(--heat-pct, 0%);
+    border-radius: 4px;
+    background: #aaa;
+    transition: width 0.25s ease, background 0.4s ease;
+}
+
+/* Tier colours */
+.heat-bar-panel[data-heat="1"] .heat-bar-fill { background: #f5a623; }
+.heat-bar-panel[data-heat="2"] .heat-bar-fill { background: #e05c1a; }
+.heat-bar-panel[data-heat="3"] .heat-bar-fill { background: #d42020; animation: heat-pulse 0.6s ease-in-out infinite alternate; }
+.heat-bar-panel[data-heat="4"] .heat-bar-fill { background: #ff00cc; animation: heat-pulse 0.35s ease-in-out infinite alternate; }
+.heat-bar-panel[data-heat="1"] .heat-bar-label { color: #f5a623; }
+.heat-bar-panel[data-heat="2"] .heat-bar-label { color: #e07030; }
+.heat-bar-panel[data-heat="3"] .heat-bar-label { color: #ff4444; }
+.heat-bar-panel[data-heat="4"] .heat-bar-label { color: #ff00cc; }
+
+@keyframes heat-pulse {
+    from { box-shadow: none; }
+    to   { box-shadow: 0 0 8px 2px currentColor; }
+}
+
+/* Chicken glow at higher heat tiers */
+.heat-hot     .chicken { filter: drop-shadow(0 0 4px rgba(224, 92, 26, 0.6)); }
+.heat-blazing .chicken { filter: drop-shadow(0 0 7px rgba(212, 32, 32, 0.8)); }
+.heat-inferno .chicken { filter: drop-shadow(0 0 12px rgba(255, 0, 204, 0.9)) brightness(1.1); animation: chicken-inferno 0.4s ease-in-out infinite alternate; }
+
+@keyframes chicken-inferno {
+    from { filter: drop-shadow(0 0 10px rgba(255, 0, 204, 0.8)) brightness(1.05); }
+    to   { filter: drop-shadow(0 0 18px rgba(255, 80, 0, 1))    brightness(1.2);  }
+}
