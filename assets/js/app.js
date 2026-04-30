@@ -33,6 +33,7 @@ const tutorialBanner = document.getElementById("tutorialBanner");
 const tutorialText = document.getElementById("tutorialText");
 const levelBanner = document.getElementById("levelBanner");
 const crosshair = document.getElementById("crosshair");
+const comboBadgeEl = document.getElementById("comboBadge");
 const menuControl = document.getElementById("menuControl");
 const restartControl = document.getElementById("restartControl");
 const playerNameEl = document.getElementById("playerName");
@@ -176,6 +177,13 @@ let slowMoActive = false;
 let firstBloodScored = false;
 let racingComboEverTriggered = false;
 let roundAchievements = [];
+
+// Streak heat system
+const HEAT_THRESHOLDS = [3, 6, 10, 15];
+const HEAT_MULTIPLIERS = [1.0, 1.1, 1.25, 1.5, 2.0];
+const HEAT_LABELS = ["", "Warm", "Hot", "Blazing", "INFERNO"];
+let streakCount = 0;
+let heatLevel = 0;
 
 const audioCtx = (() => {
     try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
@@ -965,6 +973,18 @@ function updateHud() {
     ammoEl.classList.toggle("warning", ammo <= 1);
     bestEl.textContent = bestScore;
     playerNameEl.textContent = appState.user?.nickname || "Guest";
+
+    // Timer urgency classes
+    timeEl.classList.toggle("urgent",   timeLeft <= 10 && timeLeft > 5);
+    timeEl.classList.toggle("critical", timeLeft <= 5);
+
+    // Racing combo badge
+    const comboActive = isRacingLevel() && racingComboCount >= 2
+        && (Date.now() - lastRacingHitAt) < racingComboWindowMs;
+    comboBadgeEl.classList.toggle("hidden", !comboActive);
+    if (comboActive) {
+        comboBadgeEl.textContent = `COMBO x${racingComboCount}`;
+    }
 }
 
 function setStatus(message) {
