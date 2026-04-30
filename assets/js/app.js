@@ -2286,6 +2286,64 @@ function tickPickups(deltaMs) {
     }
 }
 
+function computeHeatLevel(streak) {
+    let level = 0;
+    for (let i = 0; i < HEAT_THRESHOLDS.length; i++) {
+        if (streak >= HEAT_THRESHOLDS[i]) level = i + 1;
+    }
+    return level;
+}
+
+function applyHeatClasses(level) {
+    gameArea.classList.toggle("heat-warm",    level === 1);
+    gameArea.classList.toggle("heat-hot",     level === 2);
+    gameArea.classList.toggle("heat-blazing", level === 3);
+    gameArea.classList.toggle("heat-inferno", level === 4);
+}
+
+function onStreakHit() {
+    streakCount += 1;
+    const newHeat = computeHeatLevel(streakCount);
+    if (newHeat !== heatLevel) {
+        heatLevel = newHeat;
+        applyHeatClasses(heatLevel);
+        if (heatLevel > 0) {
+            setStatus(`${HEAT_LABELS[heatLevel]}! x${HEAT_MULTIPLIERS[heatLevel].toFixed(2)} multiplier active.`);
+        }
+    }
+    renderHeatBar();
+}
+
+function onStreakMiss() {
+    if (streakCount > 0) {
+        streakCount = 0;
+        heatLevel = 0;
+        applyHeatClasses(0);
+        renderHeatBar();
+    }
+}
+
+function getHeatMultiplier() {
+    return HEAT_MULTIPLIERS[heatLevel] ?? 1.0;
+}
+
+function renderHeatBar() {
+    let bar = document.getElementById("heatBar");
+    if (!bar) return;
+    const pct = heatLevel === 0
+        ? (streakCount / HEAT_THRESHOLDS[0]) * 25
+        : Math.min(100, 25 * heatLevel + (
+            heatLevel < HEAT_THRESHOLDS.length
+                ? ((streakCount - HEAT_THRESHOLDS[heatLevel - 1]) /
+                   ((HEAT_THRESHOLDS[heatLevel] ?? HEAT_THRESHOLDS[heatLevel - 1] + 5) - HEAT_THRESHOLDS[heatLevel - 1])) * 25
+                : 0
+          ));
+    bar.style.setProperty("--heat-pct", `${Math.min(100, pct)}%`);
+    bar.dataset.heat = heatLevel;
+    const label = bar.querySelector(".heat-bar-label");
+    if (label) label.textContent = heatLevel > 0 ? HEAT_LABELS[heatLevel] : `Streak: ${streakCount}`;
+}
+
 function getRandomChickenType() {
     const random = Math.random();
     if (random < 0.34) return chickenTypes[0];
@@ -2416,10 +2474,13 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         chicken.alive = false;
         hitCount += 1;
         const racingBonus = getRacingHitBonus();
-        const awardedPoints = (chicken.points + racingBonus) * (doublePointsActive ? 2 : 1);
+        onStreakHit();
+        const heatMult = getHeatMultiplier();
+        const awardedPoints = Math.round((chicken.points + racingBonus) * (doublePointsActive ? 2 : 1) * heatMult);
         score += awardedPoints;
         updateHud();
-        setStatus(`Direct hit! +${awardedPoints} points.${describeRacingCombo(racingBonus)}`);
+        const heatTag = heatLevel > 0 ? ` [${HEAT_LABELS[heatLevel]}]` : "";
+        setStatus(`Direct hit! +${awardedPoints} points.${describeRacingCombo(racingBonus)}${heatTag}`);
         playSound("hit");
         chicken.el.classList.add("hit");
         createEffect(x, y, "score-pop", `+${awardedPoints}`);
@@ -2438,6 +2499,7 @@ function shootAt(clientX, clientY, chicken = null, directHit = false) {
         }
     } else {
         resetRacingCombo();
+        onStreakMiss();
         playSound("miss");
         if (!tutorialMode) {
             score = Math.max(0, score - 2);
