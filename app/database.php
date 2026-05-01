@@ -64,6 +64,18 @@ function initializeDatabaseSchema(PDO $db): void
 
     ensureScoreColumns($db);
     ensureRoutesTable($db);
+    ensureScoreSubmissionsTable($db);
+}
+
+function ensureScoreSubmissionsTable(PDO $db): void
+{
+    $db->exec(
+        'CREATE TABLE IF NOT EXISTS score_submissions (
+            user_id INTEGER NOT NULL PRIMARY KEY,
+            submitted_at INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )'
+    );
 }
 
 function ensureScoreColumns(PDO $db): void
