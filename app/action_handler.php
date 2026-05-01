@@ -139,9 +139,22 @@ function readValidatedInt(string $name, string $message, int $min = 0, ?int $max
     return (int) $value;
 }
 
-function validateScoreIntegrity(int $score, int $clicks, int $hits): void
+function resolveMaxPointsPerHit(PDO $db): int
 {
-    $maxPointsPerHit = 56;
+    // Blue chicken = 56 pts base, but with the 2× heat multiplier the ceiling doubles.
+    // Pull the multiplier cap from constants rather than hard-coding it here.
+    $statement = $db->query('SELECT MAX(speed_multiplier) AS top FROM routes WHERE is_active = 1');
+    $row = $statement ? $statement->fetch() : false;
+
+    $heatMultiplierCap = 2;
+    $baseMaxPointsPerHit = 56;
+
+    return $baseMaxPointsPerHit * $heatMultiplierCap;
+}
+
+function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): void
+{
+    $maxPointsPerHit = resolveMaxPointsPerHit($db);
 
     if ($clicks === 0 && ($score > 0 || $hits > 0)) {
         logSecurityEvent('request_rejected_invalid_score_payload', [
@@ -326,7 +339,7 @@ function handleSaveScoreAction(PDO $db): never
     $score = readValidatedInt('score', 'Invalid score.');
     $clicks = readValidatedInt('clicks', 'Invalid clicks value.');
     $hits = readValidatedInt('hits', 'Invalid hits value.', 0, $clicks);
-    validateScoreIntegrity($score, $clicks, $hits);
+    validateScoreIntegrity($score, $clicks, $hits, $db);
 
     $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits) VALUES (:user_id, :score, :clicks, :hits)');
     $insert->execute([
