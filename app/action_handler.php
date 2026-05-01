@@ -278,6 +278,39 @@ function handleLogoutAction(PDO $db): never
     jsonResponse($response);
 }
 
+function enforceScoreSubmissionCooldown(PDO $db, int $userId): void
+{
+    $cooldownSeconds = 45;
+
+    $statement = $db->prepare('SELECT submitted_at FROM score_submissions WHERE user_id = :user_id');
+    $statement->execute([':user_id' => $userId]);
+    $row = $statement->fetch();
+
+    if ($row !== false) {
+        $elapsed = time() - (int) $row['submitted_at'];
+        if ($elapsed < $cooldownSeconds) {
+            $retryAfter = $cooldownSeconds - $elapsed;
+            logSecurityEvent('score_submission_rate_limited', [
+                'user_id' => $userId,
+                'elapsed_seconds' => $elapsed,
+                'retry_after_seconds' => $retryAfter,
+                'ip' => getClientIpAddress(),
+            ]);
+            jsonResponse([
+                'ok' => false,
+                'message' => "Please wait {$retryAfter}s before submitting another score.",
+            ], 429);
+        }
+    }
+
+    $upsert = $db->prepare(
+        'INSERT INTO score_submissions (user_id, submitted_at)
+         VALUES (:user_id, :now)
+         ON CONFLICT(user_id) DO UPDATE SET submitted_at = :now'
+    );
+    $upsert->execute([':user_id' => $userId, ':now' => time()]);
+}
+
 function handleSaveScoreAction(PDO $db): never
 {
     $user = getSessionUser($db);
@@ -287,6 +320,8 @@ function handleSaveScoreAction(PDO $db): never
         ]);
         jsonResponse(['ok' => false, 'message' => 'Log in first to save your score.'], 401);
     }
+
+    enforceScoreSubmissionCooldown($db, (int) $user['id']);
 
     $score = readValidatedInt('score', 'Invalid score.');
     $clicks = readValidatedInt('clicks', 'Invalid clicks value.');
