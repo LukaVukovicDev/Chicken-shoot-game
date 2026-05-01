@@ -184,6 +184,8 @@ function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): vo
             'score' => $score,
             'clicks' => $clicks,
             'hits' => $hits,
+            'max_allowed' => $hits * $maxPointsPerHit,
+            'ceiling_per_hit' => $maxPointsPerHit,
             'ip' => getClientIpAddress(),
         ]);
         jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
