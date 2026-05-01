@@ -139,22 +139,15 @@ function readValidatedInt(string $name, string $message, int $min = 0, ?int $max
     return (int) $value;
 }
 
-function resolveMaxPointsPerHit(PDO $db): int
+function resolveMaxPointsPerHit(): int
 {
-    // Blue chicken = 56 pts base, but with the 2× heat multiplier the ceiling doubles.
-    // Pull the multiplier cap from constants rather than hard-coding it here.
-    $statement = $db->query('SELECT MAX(speed_multiplier) AS top FROM routes WHERE is_active = 1');
-    $row = $statement ? $statement->fetch() : false;
-
-    $heatMultiplierCap = 2;
-    $baseMaxPointsPerHit = 56;
-
-    return $baseMaxPointsPerHit * $heatMultiplierCap;
+    // Blue chicken base = 56 pts; streak heat multiplier caps at 2×.
+    return 56 * 2;
 }
 
 function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): void
 {
-    $maxPointsPerHit = resolveMaxPointsPerHit($db);
+    $maxPointsPerHit = resolveMaxPointsPerHit();
 
     if ($clicks === 0 && ($score > 0 || $hits > 0)) {
         logSecurityEvent('request_rejected_invalid_score_payload', [
