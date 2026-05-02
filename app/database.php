@@ -101,6 +101,10 @@ function ensureScoreColumns(PDO $db): void
     if (!in_array('hits', $scoreColumnNames, true)) {
         $db->exec('ALTER TABLE scores ADD COLUMN hits INTEGER NOT NULL DEFAULT 0');
     }
+
+    if (!in_array('best_streak', $scoreColumnNames, true)) {
+        $db->exec('ALTER TABLE scores ADD COLUMN best_streak INTEGER NOT NULL DEFAULT 0');
+    }
 }
 
 function ensureRoutesTable(PDO $db): void

@@ -107,7 +107,8 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'SELECT
             COUNT(id) AS rounds_played,
             MAX(CASE WHEN clicks > 0 THEN (CAST(hits AS REAL) / clicks) * 100 ELSE 0 END) AS best_accuracy,
-            MAX(score) AS best_score
+            MAX(score) AS best_score,
+            MAX(best_streak) AS best_streak_ever
         FROM scores
         WHERE user_id = :user_id'
     );
@@ -135,6 +136,7 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
             score,
             clicks,
             hits,
+            best_streak,
             created_at,
             ROUND(CASE WHEN clicks > 0 THEN (CAST(hits AS REAL) / clicks) * 100 ELSE 0 END, 1) AS accuracy,
             ROUND(CASE WHEN clicks > 0 THEN CAST(score AS REAL) / clicks ELSE 0 END, 2) AS points_per_shot
@@ -152,6 +154,7 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'rounds_played' => (int) ($summary['rounds_played'] ?? 0),
         'best_accuracy' => round((float) ($summary['best_accuracy'] ?? 0), 1),
         'best_score' => (int) ($summary['best_score'] ?? 0),
+        'best_streak_ever' => (int) ($summary['best_streak_ever'] ?? 0),
         'best_accuracy_round' => $bestRound,
         'rank' => fetchPlayerRank($db, $user),
         'history' => $history,

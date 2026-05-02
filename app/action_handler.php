@@ -339,14 +339,16 @@ function handleSaveScoreAction(PDO $db): never
     $score = readValidatedInt('score', 'Invalid score.');
     $clicks = readValidatedInt('clicks', 'Invalid clicks value.');
     $hits = readValidatedInt('hits', 'Invalid hits value.', 0, $clicks);
+    $bestStreak = readValidatedInt('best_streak', 'Invalid streak value.', 0, $hits);
     validateScoreIntegrity($score, $clicks, $hits, $db);
 
-    $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits) VALUES (:user_id, :score, :clicks, :hits)');
+    $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits, best_streak) VALUES (:user_id, :score, :clicks, :hits, :best_streak)');
     $insert->execute([
         ':user_id' => (int) $user['id'],
         ':score' => $score,
         ':clicks' => $clicks,
         ':hits' => $hits,
+        ':best_streak' => $bestStreak,
     ]);
 
     $response = buildAppPayload($db, $user);
