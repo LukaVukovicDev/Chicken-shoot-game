@@ -157,9 +157,43 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'best_streak_ever' => (int) ($summary['best_streak_ever'] ?? 0),
         'best_accuracy_round' => $bestRound,
         'rank' => fetchPlayerRank($db, $user),
+        'percentile' => fetchPlayerPercentile($db, $user),
         'history' => $history,
         'score_trend' => calculateScoreTrend($history),
     ];
+}
+
+function fetchPlayerPercentile(?PDO $db, ?array $user): ?float
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $statement = $db->prepare(
+        'SELECT
+            COUNT(*) AS total_players,
+            SUM(CASE WHEN best_score < :user_best THEN 1 ELSE 0 END) AS players_below
+         FROM (
+             SELECT user_id, MAX(score) AS best_score
+             FROM scores
+             GROUP BY user_id
+         ) AS leaderboard'
+    );
+
+    $userBest = $db->prepare('SELECT MAX(score) AS best FROM scores WHERE user_id = :uid');
+    $userBest->execute([':uid' => (int) $user['id']]);
+    $bestRow = $userBest->fetch();
+    $best = (int) ($bestRow['best'] ?? 0);
+
+    $statement->execute([':user_best' => $best]);
+    $row = $statement->fetch();
+
+    $total = (int) ($row['total_players'] ?? 0);
+    if ($total <= 1) {
+        return null;
+    }
+
+    return round(((int) ($row['players_below'] ?? 0)) / $total * 100, 1);
 }
 
 function calculateScoreTrend(array $history): array
