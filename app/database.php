@@ -66,6 +66,21 @@ function initializeDatabaseSchema(PDO $db): void
     ensureUserColumns($db);
     ensureRoutesTable($db);
     ensureScoreSubmissionsTable($db);
+    ensureNicknameHistoryTable($db);
+}
+
+function ensureNicknameHistoryTable(PDO $db): void
+{
+    $db->exec(
+        'CREATE TABLE IF NOT EXISTS nickname_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            old_nickname TEXT NOT NULL,
+            new_nickname TEXT NOT NULL,
+            changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )'
+    );
 }
 
 function ensureScoreSubmissionsTable(PDO $db): void

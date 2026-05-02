@@ -390,6 +390,16 @@ function handleUpdateProfileAction(PDO $db): never
         jsonResponse(['ok' => false, 'message' => 'That nickname already exists. Choose another one.'], 409);
     }
 
+    $historyInsert = $db->prepare(
+        'INSERT INTO nickname_history (user_id, old_nickname, new_nickname)
+         VALUES (:user_id, :old_nickname, :new_nickname)'
+    );
+    $historyInsert->execute([
+        ':user_id' => (int) $user['id'],
+        ':old_nickname' => (string) $user['nickname'],
+        ':new_nickname' => $nickname,
+    ]);
+
     $update = $db->prepare('UPDATE users SET nickname = :nickname WHERE id = :id');
     $update->execute([
         ':nickname' => $nickname,
