@@ -214,7 +214,7 @@ function getSessionUser(?PDO $db): ?array
         return null;
     }
 
-    $statement = $db->prepare('SELECT id, username, nickname FROM users WHERE id = :id');
+    $statement = $db->prepare('SELECT id, username, nickname, last_login_at FROM users WHERE id = :id');
     $statement->execute([':id' => (int) $_SESSION['user_id']]);
     $user = $statement->fetch();
 

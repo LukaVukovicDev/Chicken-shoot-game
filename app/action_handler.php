@@ -121,6 +121,7 @@ function publicUserData(array $user): array
         'id' => (int) $user['id'],
         'username' => (string) $user['username'],
         'nickname' => (string) $user['nickname'],
+        'last_login_at' => $user['last_login_at'] ?? null,
     ];
 }
 
@@ -259,6 +260,10 @@ function handleLoginAction(PDO $db): never
     clearFailedLoginAttempts($db, $username);
     rotateSessionSecurity();
     $_SESSION['user_id'] = (int) $user['id'];
+
+    $loginTs = $db->prepare('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = :id');
+    $loginTs->execute([':id' => (int) $user['id']]);
+
     logSecurityEvent('user_login', [
         'user_id' => $_SESSION['user_id'],
         'username' => $username,

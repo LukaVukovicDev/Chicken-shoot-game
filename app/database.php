@@ -63,6 +63,7 @@ function initializeDatabaseSchema(PDO $db): void
     );
 
     ensureScoreColumns($db);
+    ensureUserColumns($db);
     ensureRoutesTable($db);
     ensureScoreSubmissionsTable($db);
 }
@@ -76,6 +77,16 @@ function ensureScoreSubmissionsTable(PDO $db): void
             FOREIGN KEY (user_id) REFERENCES users(id)
         )'
     );
+}
+
+function ensureUserColumns(PDO $db): void
+{
+    $userColumns = $db->query('PRAGMA table_info(users)')->fetchAll() ?: [];
+    $userColumnNames = array_column($userColumns, 'name');
+
+    if (!in_array('last_login_at', $userColumnNames, true)) {
+        $db->exec('ALTER TABLE users ADD COLUMN last_login_at TEXT DEFAULT NULL');
+    }
 }
 
 function ensureScoreColumns(PDO $db): void
