@@ -140,6 +140,17 @@ function readValidatedInt(string $name, string $message, int $min = 0, ?int $max
     return (int) $value;
 }
 
+function validatePasswordStrength(string $password): void
+{
+    if (mb_strlen($password) < 8) {
+        jsonResponse(['ok' => false, 'message' => 'Password must have at least 8 characters.'], 422);
+    }
+
+    if (!preg_match('/[0-9!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]/', $password)) {
+        jsonResponse(['ok' => false, 'message' => 'Password must contain at least one number or special character.'], 422);
+    }
+}
+
 function resolveMaxPointsPerHit(): int
 {
     // Blue chicken base = 56 pts; streak heat multiplier caps at 2×.
@@ -201,9 +212,7 @@ function handleRegisterAction(PDO $db): never
     if (!preg_match('/^[\p{L}\p{N}_\- ]{3,20}$/u', $nickname)) {
         jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters.'], 422);
     }
-    if (mb_strlen($password) < 6) {
-        jsonResponse(['ok' => false, 'message' => 'Password must have at least 6 characters.'], 422);
-    }
+    validatePasswordStrength($password);
 
     $usernameCheck = $db->prepare('SELECT id FROM users WHERE username = :username');
     $usernameCheck->execute([':username' => $username]);
@@ -427,9 +436,7 @@ function handleChangePasswordAction(PDO $db): never
         jsonResponse(['ok' => false, 'message' => 'Current password and new password are required.'], 422);
     }
 
-    if (mb_strlen($newPassword) < 6) {
-        jsonResponse(['ok' => false, 'message' => 'Password must have at least 6 characters.'], 422);
-    }
+    validatePasswordStrength($newPassword);
 
     $statement = $db->prepare('SELECT password_hash FROM users WHERE id = :id');
     $statement->execute([':id' => (int) $user['id']]);
