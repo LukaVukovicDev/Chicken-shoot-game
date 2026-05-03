@@ -41,6 +41,18 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         ]);
     }
 
+    if ($action === 'leaderboard_by_route') {
+        $routeId = filter_input(INPUT_GET, 'route_id', FILTER_VALIDATE_INT);
+        if (!$routeId || $routeId < 1) {
+            jsonResponse(['ok' => false, 'message' => 'Invalid route_id.'], 422);
+        }
+        jsonResponse([
+            'ok' => true,
+            'route_id' => $routeId,
+            'leaderboard' => fetchLeaderboardByRoute($database, $routeId),
+        ]);
+    }
+
     dispatchProtectedAction($action, $database);
 }
 
@@ -77,7 +89,7 @@ function readRequestedAction(): string
 
 function isPublicAction(string $action): bool
 {
-    return in_array($action, ['leaderboard', 'routes'], true);
+    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route'], true);
 }
 
 function dispatchProtectedAction(string $action, PDO $db): never
@@ -89,6 +101,9 @@ function dispatchProtectedAction(string $action, PDO $db): never
         'update_profile' => 'handleUpdateProfileAction',
         'change_password' => 'handleChangePasswordAction',
         'save_score' => 'handleSaveScoreAction',
+        'score_history' => 'handleScoreHistoryAction',
+        'my_achievements' => 'handleMyAchievementsAction',
+        'delete_account' => 'handleDeleteAccountAction',
     ];
 
     $handler = $handlers[$action] ?? null;
@@ -374,6 +389,65 @@ function handleSaveScoreAction(PDO $db): never
     }
 
     jsonResponse($response);
+}
+
+function handleScoreHistoryAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+    $page = max(1, (int) ($_POST['page'] ?? 1));
+
+    jsonResponse([
+        'ok' => true,
+        'history' => fetchScoreHistory($db, $user, $page),
+    ]);
+}
+
+function handleMyAchievementsAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+
+    jsonResponse([
+        'ok' => true,
+        'achievements' => fetchPlayerAchievements($db, $user),
+    ]);
+}
+
+function handleDeleteAccountAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+    $password = (string) ($_POST['password'] ?? '');
+
+    if ($password === '') {
+        jsonResponse(['ok' => false, 'message' => 'Password is required to delete your account.'], 422);
+    }
+
+    $stmt = $db->prepare('SELECT password_hash FROM users WHERE id = :id');
+    $stmt->execute([':id' => (int) $user['id']]);
+    $credentials = $stmt->fetch() ?: null;
+
+    if (!$credentials || !password_verify($password, (string) $credentials['password_hash'])) {
+        logSecurityEvent('delete_account_wrong_password', [
+            'user_id' => (int) $user['id'],
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Password is not correct.'], 401);
+    }
+
+    $userId = (int) $user['id'];
+    $db->prepare('DELETE FROM scores WHERE user_id = :uid')->execute([':uid' => $userId]);
+    $db->prepare('DELETE FROM achievements WHERE user_id = :uid')->execute([':uid' => $userId]);
+    $db->prepare('DELETE FROM nickname_history WHERE user_id = :uid')->execute([':uid' => $userId]);
+    $db->prepare('DELETE FROM score_submissions WHERE user_id = :uid')->execute([':uid' => $userId]);
+    $db->prepare('DELETE FROM users WHERE id = :uid')->execute([':uid' => $userId]);
+
+    logSecurityEvent('user_account_deleted', [
+        'user_id' => $userId,
+        'ip' => getClientIpAddress(),
+    ]);
+
+    resetSessionToGuest();
+
+    jsonResponse(['ok' => true, 'message' => 'Account deleted.']);
 }
 
 function checkAndGrantAchievements(PDO $db, int $userId, int $score, int $hits, int $clicks, int $bestStreak): array
