@@ -245,6 +245,90 @@ function calculateScoreTrend(array $history): array
     ]);
 }
 
+function fetchScoreHistory(?PDO $db, ?array $user, int $page = 1, int $perPage = 10): ?array
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $page = max(1, $page);
+    $offset = ($page - 1) * $perPage;
+
+    $totalStmt = $db->prepare('SELECT COUNT(*) FROM scores WHERE user_id = :uid');
+    $totalStmt->execute([':uid' => (int) $user['id']]);
+    $total = (int) $totalStmt->fetchColumn();
+
+    $stmt = $db->prepare(
+        'SELECT
+            s.id,
+            s.score,
+            s.clicks,
+            s.hits,
+            s.best_streak,
+            s.route_id,
+            s.created_at,
+            ROUND(CASE WHEN s.clicks > 0 THEN (CAST(s.hits AS REAL) / s.clicks) * 100 ELSE 0 END, 1) AS accuracy,
+            r.name AS route_name
+         FROM scores s
+         LEFT JOIN routes r ON r.id = s.route_id
+         WHERE s.user_id = :uid
+         ORDER BY s.id DESC
+         LIMIT :limit OFFSET :offset'
+    );
+    $stmt->bindValue(':uid', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return [
+        'items' => $stmt->fetchAll() ?: [],
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => (int) ceil($total / $perPage),
+    ];
+}
+
+function fetchLeaderboardByRoute(?PDO $db, int $routeId, int $limit = 10): array
+{
+    if (!$db) {
+        return [];
+    }
+
+    $stmt = $db->prepare(
+        'SELECT
+            u.nickname,
+            MAX(s.score) AS best_score,
+            COUNT(s.id) AS rounds_on_route,
+            ROUND(MAX(CASE WHEN s.clicks > 0 THEN (CAST(s.hits AS REAL) / s.clicks) * 100 ELSE 0 END), 1) AS best_accuracy
+         FROM scores s
+         INNER JOIN users u ON u.id = s.user_id
+         WHERE s.route_id = :route_id
+         GROUP BY s.user_id, u.nickname
+         ORDER BY best_score DESC, MIN(s.created_at) ASC
+         LIMIT :limit'
+    );
+    $stmt->bindValue(':route_id', $routeId, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
+function fetchPlayerAchievements(?PDO $db, ?array $user): array
+{
+    if (!$db || !$user) {
+        return [];
+    }
+
+    $stmt = $db->prepare(
+        'SELECT code, earned_at FROM achievements WHERE user_id = :uid ORDER BY earned_at ASC'
+    );
+    $stmt->execute([':uid' => (int) $user['id']]);
+
+    return $stmt->fetchAll() ?: [];
+}
+
 function getSessionUser(?PDO $db): ?array
 {
     if (!$db || empty($_SESSION['user_id'])) {
