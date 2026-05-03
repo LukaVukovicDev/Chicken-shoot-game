@@ -67,6 +67,32 @@ function initializeDatabaseSchema(PDO $db): void
     ensureRoutesTable($db);
     ensureScoreSubmissionsTable($db);
     ensureNicknameHistoryTable($db);
+    ensureScoreRouteColumn($db);
+    ensureAchievementsTable($db);
+}
+
+function ensureScoreRouteColumn(PDO $db): void
+{
+    $cols = $db->query('PRAGMA table_info(scores)')->fetchAll() ?: [];
+    $names = array_column($cols, 'name');
+
+    if (!in_array('route_id', $names, true)) {
+        $db->exec('ALTER TABLE scores ADD COLUMN route_id INTEGER DEFAULT NULL');
+    }
+}
+
+function ensureAchievementsTable(PDO $db): void
+{
+    $db->exec(
+        'CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            code TEXT NOT NULL,
+            earned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, code),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )'
+    );
 }
 
 function ensureNicknameHistoryTable(PDO $db): void
