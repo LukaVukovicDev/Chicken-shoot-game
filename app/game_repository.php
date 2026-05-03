@@ -329,6 +329,46 @@ function fetchPlayerAchievements(?PDO $db, ?array $user): array
     return $stmt->fetchAll() ?: [];
 }
 
+function fetchLifetimeStats(?PDO $db, ?array $user): ?array
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $stmt = $db->prepare(
+        'SELECT
+            COUNT(id) AS total_rounds,
+            COALESCE(SUM(clicks), 0) AS total_clicks,
+            COALESCE(SUM(hits), 0) AS total_hits,
+            COALESCE(SUM(score), 0) AS total_score,
+            ROUND(
+                CASE WHEN SUM(clicks) > 0
+                     THEN (CAST(SUM(hits) AS REAL) / SUM(clicks)) * 100
+                     ELSE 0 END,
+                1
+            ) AS lifetime_accuracy,
+            ROUND(
+                CASE WHEN COUNT(id) > 0
+                     THEN CAST(SUM(score) AS REAL) / COUNT(id)
+                     ELSE 0 END,
+                0
+            ) AS average_score
+         FROM scores
+         WHERE user_id = :uid'
+    );
+    $stmt->execute([':uid' => (int) $user['id']]);
+    $row = $stmt->fetch() ?: [];
+
+    return [
+        'total_rounds' => (int) ($row['total_rounds'] ?? 0),
+        'total_clicks' => (int) ($row['total_clicks'] ?? 0),
+        'total_hits' => (int) ($row['total_hits'] ?? 0),
+        'total_score' => (int) ($row['total_score'] ?? 0),
+        'lifetime_accuracy' => (float) ($row['lifetime_accuracy'] ?? 0.0),
+        'average_score' => (int) ($row['average_score'] ?? 0),
+    ];
+}
+
 function getSessionUser(?PDO $db): ?array
 {
     if (!$db || empty($_SESSION['user_id'])) {

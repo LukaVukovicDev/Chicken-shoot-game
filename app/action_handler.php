@@ -126,6 +126,8 @@ function buildAppPayload(PDO $db, ?array $user): array
         'user' => $user,
         'leaderboard' => fetchLeaderboard($db),
         'analytics' => fetchPlayerAnalytics($db, $user),
+        'achievements' => fetchPlayerAchievements($db, $user),
+        'lifetime_stats' => fetchLifetimeStats($db, $user),
         'csrfToken' => getCsrfToken(),
     ];
 }
