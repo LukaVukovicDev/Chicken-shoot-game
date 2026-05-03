@@ -349,21 +349,95 @@ function handleSaveScoreAction(PDO $db): never
     $clicks = readValidatedInt('clicks', 'Invalid clicks value.');
     $hits = readValidatedInt('hits', 'Invalid hits value.', 0, $clicks);
     $bestStreak = readValidatedInt('best_streak', 'Invalid streak value.', 0, $hits);
+    $routeId = filter_input(INPUT_POST, 'route_id', FILTER_VALIDATE_INT) ?: null;
     validateScoreIntegrity($score, $clicks, $hits, $db);
 
-    $insert = $db->prepare('INSERT INTO scores (user_id, score, clicks, hits, best_streak) VALUES (:user_id, :score, :clicks, :hits, :best_streak)');
+    $insert = $db->prepare(
+        'INSERT INTO scores (user_id, score, clicks, hits, best_streak, route_id)
+         VALUES (:user_id, :score, :clicks, :hits, :best_streak, :route_id)'
+    );
     $insert->execute([
         ':user_id' => (int) $user['id'],
         ':score' => $score,
         ':clicks' => $clicks,
         ':hits' => $hits,
         ':best_streak' => $bestStreak,
+        ':route_id' => $routeId,
     ]);
+
+    $newAchievements = checkAndGrantAchievements($db, (int) $user['id'], $score, $hits, $clicks, $bestStreak);
 
     $response = buildAppPayload($db, $user);
     $response['message'] = 'Score saved.';
+    if ($newAchievements !== []) {
+        $response['new_achievements'] = $newAchievements;
+    }
 
     jsonResponse($response);
+}
+
+function checkAndGrantAchievements(PDO $db, int $userId, int $score, int $hits, int $clicks, int $bestStreak): array
+{
+    $totalRounds = (int) $db->prepare('SELECT COUNT(*) FROM scores WHERE user_id = :uid')
+        ->execute([':uid' => $userId]) ? (int) $db->query("SELECT COUNT(*) FROM scores WHERE user_id = $userId")->fetchColumn() : 0;
+
+    $stmt = $db->prepare('SELECT COUNT(*) FROM scores WHERE user_id = :uid');
+    $stmt->execute([':uid' => $userId]);
+    $totalRounds = (int) $stmt->fetchColumn();
+
+    $accuracy = $clicks > 0 ? ($hits / $clicks) * 100 : 0;
+
+    $candidates = [];
+
+    if ($totalRounds >= 1) {
+        $candidates[] = 'first_blood';
+    }
+    if ($score >= 1000) {
+        $candidates[] = 'four_digits';
+    }
+    if ($score >= 3000) {
+        $candidates[] = 'sharpshooter';
+    }
+    if ($score >= 5000) {
+        $candidates[] = 'elite_hunter';
+    }
+    if ($accuracy >= 80.0 && $hits >= 10) {
+        $candidates[] = 'dead_eye';
+    }
+    if ($bestStreak >= 10) {
+        $candidates[] = 'streak_master';
+    }
+    if ($totalRounds >= 10) {
+        $candidates[] = 'veteran';
+    }
+    if ($hits >= 50) {
+        $candidates[] = 'centurion';
+    }
+
+    if ($candidates === []) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($candidates), '?'));
+    $existing = $db->prepare(
+        "SELECT code FROM achievements WHERE user_id = ? AND code IN ($placeholders)"
+    );
+    $existing->execute(array_merge([$userId], $candidates));
+    $alreadyEarned = array_column($existing->fetchAll() ?: [], 'code');
+
+    $toGrant = array_diff($candidates, $alreadyEarned);
+    if ($toGrant === []) {
+        return [];
+    }
+
+    $grant = $db->prepare(
+        'INSERT OR IGNORE INTO achievements (user_id, code) VALUES (:uid, :code)'
+    );
+    foreach ($toGrant as $code) {
+        $grant->execute([':uid' => $userId, ':code' => $code]);
+    }
+
+    return array_values($toGrant);
 }
 
 function requireAuthenticatedUser(PDO $db): array
