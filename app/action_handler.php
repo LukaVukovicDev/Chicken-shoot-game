@@ -454,9 +454,6 @@ function handleDeleteAccountAction(PDO $db): never
 
 function checkAndGrantAchievements(PDO $db, int $userId, int $score, int $hits, int $clicks, int $bestStreak): array
 {
-    $totalRounds = (int) $db->prepare('SELECT COUNT(*) FROM scores WHERE user_id = :uid')
-        ->execute([':uid' => $userId]) ? (int) $db->query("SELECT COUNT(*) FROM scores WHERE user_id = $userId")->fetchColumn() : 0;
-
     $stmt = $db->prepare('SELECT COUNT(*) FROM scores WHERE user_id = :uid');
     $stmt->execute([':uid' => $userId]);
     $totalRounds = (int) $stmt->fetchColumn();
