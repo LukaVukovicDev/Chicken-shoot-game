@@ -43,14 +43,6 @@ function isHttpsRequest(): bool
         return true;
     }
 
-    $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
-    if ($forwardedProto !== '') {
-        $firstForwardedProto = strtok($forwardedProto, ',');
-        if ($firstForwardedProto !== false && trim($firstForwardedProto) === 'https') {
-            return true;
-        }
-    }
-
     return (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
 }
 
@@ -68,9 +60,7 @@ function sendSecurityHeaders(): void
     header('X-Permitted-Cross-Domain-Policies: none');
     header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; media-src 'self'");
 
-    if (isHttpsRequest()) {
-        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
-    }
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
 }
 
 function ensureCsrfToken(bool $rotate = false): void
