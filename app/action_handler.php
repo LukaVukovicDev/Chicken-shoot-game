@@ -29,11 +29,13 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
     $database = requireDatabase($db);
 
     if ($action === 'leaderboard') {
+        enforcePublicEndpointRateLimit($action);
         $user = getSessionUser($database);
         jsonResponse(buildAppPayload($database, $user));
     }
 
     if ($action === 'routes') {
+        enforcePublicEndpointRateLimit($action);
         jsonResponse([
             'ok' => true,
             'routes' => fetchRoutes($database),
@@ -42,6 +44,7 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
     }
 
     if ($action === 'leaderboard_by_route') {
+        enforcePublicEndpointRateLimit($action);
         $routeId = filter_input(INPUT_GET, 'route_id', FILTER_VALIDATE_INT);
         if (!$routeId || $routeId < 1) {
             jsonResponse(['ok' => false, 'message' => 'Invalid route_id.'], 422);

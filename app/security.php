@@ -6,6 +6,8 @@ const SESSION_REGENERATION_INTERVAL = 900;
 const LOGIN_RATE_LIMIT_WINDOW = 900;
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_BLOCK_SECONDS = 900;
+const PUBLIC_RATE_LIMIT_WINDOW = 60;
+const PUBLIC_RATE_LIMIT_MAX_REQUESTS = 30;
 
 function bootstrapSecurity(): void
 {
@@ -309,6 +311,46 @@ function logSecurityEvent(string $event, array $context = []): void
     if ($entry !== false) {
         @file_put_contents($logDirectory . DIRECTORY_SEPARATOR . 'security.log', $entry . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
+}
+
+function enforcePublicEndpointRateLimit(string $action): void
+{
+    $ip = getClientIpAddress();
+    $key = hash('sha256', $ip . '|' . $action);
+    $cacheDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'rl';
+
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0700, true);
+    }
+
+    $file = $cacheDir . DIRECTORY_SEPARATOR . $key . '.json';
+    $now = time();
+    $windowStart = $now - PUBLIC_RATE_LIMIT_WINDOW;
+
+    $fp = @fopen($file, 'c+');
+    if ($fp === false) {
+        return;
+    }
+
+    flock($fp, LOCK_EX);
+    $raw = stream_get_contents($fp);
+    $timestamps = is_string($raw) && $raw !== '' ? (array) json_decode($raw, true) : [];
+    $timestamps = array_filter($timestamps, static fn($t) => is_int($t) && $t > $windowStart);
+    $timestamps[] = $now;
+
+    if (count($timestamps) > PUBLIC_RATE_LIMIT_MAX_REQUESTS) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        logSecurityEvent('public_rate_limit_exceeded', ['action' => $action, 'ip' => $ip]);
+        header('Retry-After: ' . PUBLIC_RATE_LIMIT_WINDOW);
+        jsonResponse(['ok' => false, 'message' => 'Too many requests. Please slow down.'], 429);
+    }
+
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, (string) json_encode(array_values($timestamps)));
+    flock($fp, LOCK_UN);
+    fclose($fp);
 }
 
 function fetchLoginAttempt(PDO $db, string $username, string $ip): ?array
