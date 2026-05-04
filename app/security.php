@@ -226,14 +226,6 @@ function isAllowedOrigin(string $url): bool
 
 function getRequestHost(): string
 {
-    $forwardedHost = trim((string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
-    if ($forwardedHost !== '') {
-        $firstForwardedHost = strtok($forwardedHost, ',');
-        if ($firstForwardedHost !== false) {
-            return trim($firstForwardedHost);
-        }
-    }
-
     return trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
 }
 
@@ -244,11 +236,6 @@ function normalizeHostName(string $host): string
 
 function getRequestPort(string $scheme, string $host): int
 {
-    $forwardedPort = trim((string) ($_SERVER['HTTP_X_FORWARDED_PORT'] ?? ''));
-    if ($forwardedPort !== '' && ctype_digit($forwardedPort)) {
-        return (int) $forwardedPort;
-    }
-
     $parsedPort = parse_url($scheme . '://' . $host, PHP_URL_PORT);
     if (is_int($parsedPort)) {
         return $parsedPort;
