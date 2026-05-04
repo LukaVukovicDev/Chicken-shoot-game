@@ -229,8 +229,8 @@ function handleRegisterAction(PDO $db): never
     if (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username)) {
         jsonResponse(['ok' => false, 'message' => 'Username must have 3-20 characters and use only letters, numbers or _.'], 422);
     }
-    if (!preg_match('/^[\p{L}\p{N}_\- ]{3,20}$/u', $nickname)) {
-        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters.'], 422);
+    if (!preg_match('/^[a-zA-Z0-9_\- ]{3,20}$/', $nickname)) {
+        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).'], 422);
     }
     validatePasswordStrength($password);
 
@@ -531,8 +531,8 @@ function handleUpdateProfileAction(PDO $db): never
     $user = requireAuthenticatedUser($db);
     $nickname = trim((string) ($_POST['nickname'] ?? ''));
 
-    if (!preg_match('/^[\p{L}\p{N}_\- ]{3,20}$/u', $nickname)) {
-        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters.'], 422);
+    if (!preg_match('/^[a-zA-Z0-9_\- ]{3,20}$/', $nickname)) {
+        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).'], 422);
     }
 
     $nicknameCheck = $db->prepare(
