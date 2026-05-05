@@ -1,4 +1,88 @@
-﻿:root {
+﻿@media (max-width: 900px) {
+    .hud {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 8px;
+        width: 98vw;
+        max-width: 100vw;
+        top: 10px;
+    }
+    .panel {
+        min-height: 54px;
+        padding: 10px 8px;
+        font-size: 0.95rem;
+        border-radius: 14px;
+    }
+    .panel-label {
+        font-size: 0.7rem;
+        margin-bottom: 3px;
+    }
+    .panel-value {
+        font-size: clamp(0.9rem, 1.2vw, 1.3rem);
+    }
+    .button, .hud-button {
+        font-size: 0.95rem;
+        padding: 8px 12px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .hud {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 4px;
+        width: 100vw;
+        max-width: 100vw;
+        top: 2px;
+    }
+    .panel {
+        min-height: 38px;
+        padding: 6px 2px;
+        font-size: 0.85rem;
+        border-radius: 8px;
+    }
+    .panel-label {
+        font-size: 0.6rem;
+        margin-bottom: 1px;
+    }
+    .panel-value {
+        font-size: clamp(0.7rem, 1vw, 1.1rem);
+    }
+    .button, .hud-button {
+        font-size: 0.85rem;
+        padding: 6px 6px;
+        border-radius: 8px;
+    }
+}
+.hud {
+    animation: hudFadeIn 0.8s cubic-bezier(.4,1.4,.6,1) 0.1s both;
+}
+
+@keyframes hudFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-32px) scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+.panel {
+    animation: panelPopIn 0.7s cubic-bezier(.4,1.4,.6,1) 0.2s both;
+}
+
+@keyframes panelPopIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(18px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+:root {
     --sky-top: #86d7ff;
     --sky-bottom: #f5fdff;
     --field-top: #7fd16e;
@@ -111,11 +195,13 @@ body.level-seven {
     transform: translateX(-50%);
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(11, minmax(72px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 14px;
     align-items: stretch;
-    width: min(1360px, calc(100vw - (var(--screen-gutter) * 2)));
+    width: min(98vw, 1360px);
+    max-width: 1360px;
     pointer-events: none;
+    transition: width 0.3s cubic-bezier(.4,1.4,.6,1);
 }
 
 .panel {
@@ -124,27 +210,33 @@ body.level-seven {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 14px 16px;
-    border-radius: 18px;
+    padding: 16px 18px;
+    border-radius: 20px;
     background: var(--panel);
-    box-shadow: 0 12px 28px var(--shadow);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 32px 0 rgba(8, 20, 14, 0.28), 0 1.5px 6px 0 rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
     pointer-events: none;
+    transition: box-shadow 0.2s, border 0.2s, background 0.2s;
 }
 
 .panel-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
-    opacity: 0.78;
-    margin-bottom: 6px;
+    letter-spacing: 0.18em;
+    opacity: 0.82;
+    margin-bottom: 7px;
+    font-weight: 600;
+    color: var(--accent);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
 .panel-value {
-    font-size: clamp(1rem, 1.7vw, 2rem);
-    font-weight: 700;
+    font-size: clamp(1.1rem, 2vw, 2.2rem);
+    font-weight: 800;
     overflow-wrap: anywhere;
+    color: var(--text);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
 
 .game-area {
@@ -476,11 +568,43 @@ body.level-eight .istanbul-scene {
     position: absolute;
     inset-inline: 7%;
     bottom: 18vh;
-    height: 10vh;
-    background:
-        radial-gradient(circle at 10% 72%, rgba(255, 210, 108, 0.82) 0 3px, transparent 4px),
-        radial-gradient(circle at 22% 52%, rgba(255, 210, 108, 0.56) 0 2px, transparent 3px),
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    contain: layout paint style;
+    background: rgba(255,255,255,0.01);
         radial-gradient(circle at 34% 68%, rgba(255, 210, 108, 0.74) 0 3px, transparent 4px),
+/* Dugmad - modernizacija */
+.button, .hud-button {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 16px;
+    border: none;
+    padding: 10px 22px;
+    background: linear-gradient(90deg, var(--accent) 60%, #ffe9a3 100%);
+    color: #2d2d2d;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.12s;
+    outline: none;
+    pointer-events: auto;
+}
+.button.secondary, .hud-button.secondary {
+    background: linear-gradient(90deg, #e0e0e0 60%, #fffbe9 100%);
+    color: #1a1a1a;
+}
+.button:hover, .button:focus, .hud-button:hover, .hud-button:focus {
+    background: linear-gradient(90deg, var(--danger) 60%, var(--accent) 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+    transform: translateY(-2px) scale(1.04);
+}
+.button:active, .hud-button:active {
+    background: linear-gradient(90deg, var(--accent) 60%, var(--danger) 100%);
+    color: #fff;
+    transform: scale(0.98);
+}
         radial-gradient(circle at 48% 46%, rgba(255, 210, 108, 0.58) 0 2px, transparent 3px),
         radial-gradient(circle at 59% 66%, rgba(255, 210, 108, 0.72) 0 3px, transparent 4px),
         radial-gradient(circle at 71% 54%, rgba(255, 210, 108, 0.54) 0 2px, transparent 3px),
