@@ -174,22 +174,18 @@ function fetchPlayerPercentile(?PDO $db, ?array $user): ?float
     }
 
     $statement = $db->prepare(
-        'SELECT
-            COUNT(*) AS total_players,
-            SUM(CASE WHEN best_score < :user_best THEN 1 ELSE 0 END) AS players_below
-         FROM (
+        'WITH bests AS (
              SELECT user_id, MAX(score) AS best_score
              FROM scores
              GROUP BY user_id
-         ) AS leaderboard'
+         )
+         SELECT
+             COUNT(*) AS total_players,
+             SUM(CASE WHEN b.best_score < u.best_score THEN 1 ELSE 0 END) AS players_below
+         FROM bests b
+         CROSS JOIN (SELECT best_score FROM bests WHERE user_id = :uid) AS u'
     );
-
-    $userBest = $db->prepare('SELECT MAX(score) AS best FROM scores WHERE user_id = :uid');
-    $userBest->execute([':uid' => (int) $user['id']]);
-    $bestRow = $userBest->fetch();
-    $best = (int) ($bestRow['best'] ?? 0);
-
-    $statement->execute([':user_best' => $best]);
+    $statement->execute([':uid' => (int) $user['id']]);
     $row = $statement->fetch();
 
     $total = (int) ($row['total_players'] ?? 0);
