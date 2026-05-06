@@ -64,37 +64,41 @@ function fetchPlayerRank(?PDO $db, ?array $user): ?array
         return null;
     }
 
-    $statement = $db->query(
-        'SELECT
-            user_id,
-            MAX(score) AS best_score,
-            MIN(created_at) AS first_round_at
-         FROM scores
-         GROUP BY user_id
-         ORDER BY best_score DESC, first_round_at ASC, user_id ASC'
+    $statement = $db->prepare(
+        'WITH ranked AS (
+             SELECT
+                 user_id,
+                 MAX(score) AS best_score,
+                 ROW_NUMBER() OVER (ORDER BY MAX(score) DESC, MIN(created_at) ASC, user_id ASC) AS position
+             FROM scores
+             GROUP BY user_id
+         ),
+         total AS (SELECT COUNT(*) AS cnt FROM ranked)
+         SELECT
+             r.position,
+             r.best_score,
+             t.cnt AS total_players,
+             LAG(r.best_score) OVER (ORDER BY r.position) AS prev_best_score
+         FROM ranked r
+         CROSS JOIN total t
+         WHERE r.user_id = :uid'
     );
+    $statement->execute([':uid' => (int) $user['id']]);
+    $row = $statement->fetch();
 
-    $rankedPlayers = $statement->fetchAll() ?: [];
-    $currentUserId = (int) $user['id'];
-
-    foreach ($rankedPlayers as $index => $player) {
-        if ((int) $player['user_id'] !== $currentUserId) {
-            continue;
-        }
-
-        $nextPlayer = $rankedPlayers[$index - 1] ?? null;
-        $pointsToNextRank = $nextPlayer
-            ? max(0, (int) $nextPlayer['best_score'] - (int) $player['best_score'] + 1)
-            : 0;
-
-        return [
-            'position' => $index + 1,
-            'total_players' => count($rankedPlayers),
-            'points_to_next_rank' => $pointsToNextRank,
-        ];
+    if (!$row) {
+        return null;
     }
 
-    return null;
+    $pointsToNextRank = $row['prev_best_score'] !== null
+        ? max(0, (int) $row['prev_best_score'] - (int) $row['best_score'] + 1)
+        : 0;
+
+    return [
+        'position' => (int) $row['position'],
+        'total_players' => (int) $row['total_players'],
+        'points_to_next_rank' => $pointsToNextRank,
+    ];
 }
 
 function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
