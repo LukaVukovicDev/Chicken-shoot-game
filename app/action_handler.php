@@ -439,11 +439,29 @@ function handleDeleteAccountAction(PDO $db): never
     }
 
     $userId = (int) $user['id'];
-    $db->prepare('DELETE FROM scores WHERE user_id = :uid')->execute([':uid' => $userId]);
-    $db->prepare('DELETE FROM achievements WHERE user_id = :uid')->execute([':uid' => $userId]);
-    $db->prepare('DELETE FROM nickname_history WHERE user_id = :uid')->execute([':uid' => $userId]);
-    $db->prepare('DELETE FROM score_submissions WHERE user_id = :uid')->execute([':uid' => $userId]);
-    $db->prepare('DELETE FROM users WHERE id = :uid')->execute([':uid' => $userId]);
+
+    $db->beginTransaction();
+    try {
+        $deleteLinked = $db->prepare(
+            'DELETE FROM scores           WHERE user_id = :uid;
+             DELETE FROM achievements     WHERE user_id = :uid;
+             DELETE FROM nickname_history WHERE user_id = :uid;
+             DELETE FROM score_submissions WHERE user_id = :uid'
+        );
+        foreach (['scores', 'achievements', 'nickname_history', 'score_submissions'] as $table) {
+            $db->prepare("DELETE FROM {$table} WHERE user_id = :uid")->execute([':uid' => $userId]);
+        }
+        $db->prepare('DELETE FROM users WHERE id = :uid')->execute([':uid' => $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        logSecurityEvent('delete_account_transaction_failed', [
+            'user_id' => $userId,
+            'error' => $e->getMessage(),
+            'ip' => getClientIpAddress(),
+        ]);
+        jsonResponse(['ok' => false, 'message' => 'Account deletion failed. Please try again.'], 500);
+    }
 
     logSecurityEvent('user_account_deleted', [
         'user_id' => $userId,
