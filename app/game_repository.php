@@ -341,6 +341,7 @@ function fetchLifetimeStats(?PDO $db, ?array $user): ?array
             COALESCE(SUM(clicks), 0) AS total_clicks,
             COALESCE(SUM(hits), 0) AS total_hits,
             COALESCE(SUM(score), 0) AS total_score,
+            COALESCE(MAX(best_streak), 0) AS best_streak_ever,
             ROUND(
                 CASE WHEN SUM(clicks) > 0
                      THEN (CAST(SUM(hits) AS REAL) / SUM(clicks)) * 100
@@ -359,13 +360,36 @@ function fetchLifetimeStats(?PDO $db, ?array $user): ?array
     $stmt->execute([':uid' => (int) $user['id']]);
     $row = $stmt->fetch() ?: [];
 
+    $favoriteRoute = null;
+    if ((int) ($row['total_rounds'] ?? 0) > 0) {
+        $routeStmt = $db->prepare(
+            'SELECT r.name, COUNT(s.id) AS plays
+             FROM scores s
+             INNER JOIN routes r ON r.id = s.route_id
+             WHERE s.user_id = :uid AND s.route_id IS NOT NULL
+             GROUP BY s.route_id
+             ORDER BY plays DESC, MIN(s.created_at) ASC
+             LIMIT 1'
+        );
+        $routeStmt->execute([':uid' => (int) $user['id']]);
+        $favoriteRow = $routeStmt->fetch() ?: null;
+        if ($favoriteRow) {
+            $favoriteRoute = [
+                'name' => (string) $favoriteRow['name'],
+                'plays' => (int) $favoriteRow['plays'],
+            ];
+        }
+    }
+
     return [
         'total_rounds' => (int) ($row['total_rounds'] ?? 0),
         'total_clicks' => (int) ($row['total_clicks'] ?? 0),
         'total_hits' => (int) ($row['total_hits'] ?? 0),
         'total_score' => (int) ($row['total_score'] ?? 0),
+        'best_streak_ever' => (int) ($row['best_streak_ever'] ?? 0),
         'lifetime_accuracy' => (float) ($row['lifetime_accuracy'] ?? 0.0),
         'average_score' => (int) ($row['average_score'] ?? 0),
+        'favorite_route' => $favoriteRoute,
     ];
 }
 
