@@ -498,6 +498,9 @@ function checkAndGrantAchievements(PDO $db, int $userId, int $score, int $hits, 
     if ($accuracy >= 80.0 && $hits >= 10) {
         $candidates[] = 'dead_eye';
     }
+    if ($accuracy >= 100.0 && $hits >= 5) {
+        $candidates[] = 'perfectionist';
+    }
     if ($bestStreak >= 10) {
         $candidates[] = 'streak_master';
     }
@@ -506,6 +509,15 @@ function checkAndGrantAchievements(PDO $db, int $userId, int $score, int $hits, 
     }
     if ($hits >= 50) {
         $candidates[] = 'centurion';
+    }
+
+    $routeCountStmt = $db->prepare(
+        'SELECT COUNT(DISTINCT route_id) AS unique_routes FROM scores WHERE user_id = :uid AND route_id IS NOT NULL'
+    );
+    $routeCountStmt->execute([':uid' => $userId]);
+    $uniqueRoutes = (int) ($routeCountStmt->fetchColumn() ?: 0);
+    if ($uniqueRoutes >= 8) {
+        $candidates[] = 'route_master';
     }
 
     if ($candidates === []) {
