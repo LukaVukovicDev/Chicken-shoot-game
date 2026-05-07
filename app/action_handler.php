@@ -75,6 +75,16 @@ function ensurePostRequest(): void
     }
 }
 
+function ensureAjaxRequest(): void
+{
+    $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+    $acceptsJson = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json');
+
+    if (strtolower($requestedWith) !== 'xmlhttprequest' && !$acceptsJson) {
+        jsonResponse(['ok' => false, 'message' => 'API requests only.'], 400);
+    }
+}
+
 function readRequestedAction(): string
 {
     $action = trim((string) ($_GET['action'] ?? ''));
