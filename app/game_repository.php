@@ -360,26 +360,9 @@ function fetchLifetimeStats(?PDO $db, ?array $user): ?array
     $stmt->execute([':uid' => (int) $user['id']]);
     $row = $stmt->fetch() ?: [];
 
-    $favoriteRoute = null;
-    if ((int) ($row['total_rounds'] ?? 0) > 0) {
-        $routeStmt = $db->prepare(
-            'SELECT r.name, COUNT(s.id) AS plays
-             FROM scores s
-             INNER JOIN routes r ON r.id = s.route_id
-             WHERE s.user_id = :uid AND s.route_id IS NOT NULL
-             GROUP BY s.route_id
-             ORDER BY plays DESC, MIN(s.created_at) ASC
-             LIMIT 1'
-        );
-        $routeStmt->execute([':uid' => (int) $user['id']]);
-        $favoriteRow = $routeStmt->fetch() ?: null;
-        if ($favoriteRow) {
-            $favoriteRoute = [
-                'name' => (string) $favoriteRow['name'],
-                'plays' => (int) $favoriteRow['plays'],
-            ];
-        }
-    }
+    $favoriteRoute = (int) ($row['total_rounds'] ?? 0) > 0
+        ? fetchTopRouteForUser($db, (int) $user['id'])
+        : null;
 
     return [
         'total_rounds' => (int) ($row['total_rounds'] ?? 0),
@@ -390,6 +373,30 @@ function fetchLifetimeStats(?PDO $db, ?array $user): ?array
         'lifetime_accuracy' => (float) ($row['lifetime_accuracy'] ?? 0.0),
         'average_score' => (int) ($row['average_score'] ?? 0),
         'favorite_route' => $favoriteRoute,
+    ];
+}
+
+function fetchTopRouteForUser(PDO $db, int $userId): ?array
+{
+    $stmt = $db->prepare(
+        'SELECT r.name, COUNT(s.id) AS plays
+         FROM scores s
+         INNER JOIN routes r ON r.id = s.route_id
+         WHERE s.user_id = :uid AND s.route_id IS NOT NULL
+         GROUP BY s.route_id
+         ORDER BY plays DESC, MIN(s.created_at) ASC
+         LIMIT 1'
+    );
+    $stmt->execute([':uid' => $userId]);
+    $row = $stmt->fetch() ?: null;
+
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'name' => (string) $row['name'],
+        'plays' => (int) $row['plays'],
     ];
 }
 
