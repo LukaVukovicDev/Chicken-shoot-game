@@ -164,6 +164,7 @@ function fetchPlayerAnalytics(?PDO $db, ?array $user, int $limit = 8): ?array
         'percentile' => fetchPlayerPercentile($db, $user),
         'history' => $history,
         'score_trend' => calculateScoreTrend($history),
+        'above_average_streak' => fetchRecentScoreStreak($db, $user),
     ];
 }
 
@@ -374,6 +375,38 @@ function fetchLifetimeStats(?PDO $db, ?array $user): ?array
         'average_score' => (int) ($row['average_score'] ?? 0),
         'favorite_route' => $favoriteRoute,
     ];
+}
+
+function fetchRecentScoreStreak(?PDO $db, ?array $user): int
+{
+    if (!$db || !$user) {
+        return 0;
+    }
+
+    $stmt = $db->prepare(
+        'WITH avg_score AS (
+             SELECT CAST(AVG(score) AS REAL) AS mean FROM scores WHERE user_id = :uid
+         )
+         SELECT s.score, a.mean
+         FROM scores s
+         CROSS JOIN avg_score a
+         WHERE s.user_id = :uid
+         ORDER BY s.id DESC
+         LIMIT 20'
+    );
+    $stmt->execute([':uid' => (int) $user['id']]);
+    $rows = $stmt->fetchAll() ?: [];
+
+    $streak = 0;
+    foreach ($rows as $row) {
+        if ((float) $row['score'] >= (float) $row['mean']) {
+            $streak++;
+        } else {
+            break;
+        }
+    }
+
+    return $streak;
 }
 
 function fetchTopRouteForUser(PDO $db, int $userId): ?array
