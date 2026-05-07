@@ -43,6 +43,16 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         ]);
     }
 
+    if ($action === 'stats') {
+        enforcePublicEndpointRateLimit($action);
+        $user = getSessionUser($database);
+        jsonResponse([
+            'ok' => true,
+            'lifetime_stats' => fetchLifetimeStats($database, $user),
+            'above_average_streak' => $user ? fetchRecentScoreStreak($database, $user) : null,
+        ]);
+    }
+
     if ($action === 'leaderboard_by_route') {
         enforcePublicEndpointRateLimit($action);
         $routeId = filter_input(INPUT_GET, 'route_id', FILTER_VALIDATE_INT);
@@ -102,7 +112,7 @@ function readRequestedAction(): string
 
 function isPublicAction(string $action): bool
 {
-    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route'], true);
+    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route', 'stats'], true);
 }
 
 function dispatchProtectedAction(string $action, PDO $db): never
