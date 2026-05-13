@@ -50,6 +50,18 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
             'ok' => true,
             'lifetime_stats' => fetchLifetimeStats($database, $user),
             'above_average_streak' => $user ? fetchRecentScoreStreak($database, $user) : null,
+            'personal_best' => fetchPersonalBest($database, $user),
+            'worst_round' => fetchWorstRound($database, $user),
+        ]);
+    }
+
+    if ($action === 'personal_best') {
+        enforcePublicEndpointRateLimit($action);
+        $user = getSessionUser($database);
+        jsonResponse([
+            'ok' => true,
+            'personal_best' => fetchPersonalBest($database, $user),
+            'worst_round' => fetchWorstRound($database, $user),
         ]);
     }
 
@@ -112,7 +124,7 @@ function readRequestedAction(): string
 
 function isPublicAction(string $action): bool
 {
-    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route', 'stats'], true);
+    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route', 'stats', 'personal_best'], true);
 }
 
 function dispatchProtectedAction(string $action, PDO $db): never
@@ -151,6 +163,8 @@ function buildAppPayload(PDO $db, ?array $user): array
         'analytics' => fetchPlayerAnalytics($db, $user),
         'achievements' => fetchPlayerAchievements($db, $user),
         'lifetime_stats' => fetchLifetimeStats($db, $user),
+        'personal_best' => fetchPersonalBest($db, $user),
+        'worst_round' => fetchWorstRound($db, $user),
         'csrfToken' => getCsrfToken(),
     ];
 }
