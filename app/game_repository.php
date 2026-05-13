@@ -433,6 +433,43 @@ function fetchTopRouteForUser(PDO $db, int $userId): ?array
     ];
 }
 
+function fetchPersonalBest(?PDO $db, ?array $user): ?array
+{
+    if (!$db || !$user) {
+        return null;
+    }
+
+    $stmt = $db->prepare(
+        'SELECT
+            s.score,
+            s.hits,
+            s.clicks,
+            s.created_at,
+            ROUND(CASE WHEN s.clicks > 0 THEN (CAST(s.hits AS REAL) / s.clicks) * 100 ELSE 0 END, 1) AS accuracy,
+            r.name AS route_name
+         FROM scores s
+         LEFT JOIN routes r ON r.id = s.route_id
+         WHERE s.user_id = :uid
+         ORDER BY s.score DESC, s.created_at ASC
+         LIMIT 1'
+    );
+    $stmt->execute([':uid' => (int) $user['id']]);
+    $row = $stmt->fetch() ?: null;
+
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'score'      => (int) $row['score'],
+        'hits'       => (int) $row['hits'],
+        'clicks'     => (int) $row['clicks'],
+        'accuracy'   => (float) $row['accuracy'],
+        'route_name' => $row['route_name'] !== null ? (string) $row['route_name'] : null,
+        'achieved_at' => (string) $row['created_at'],
+    ];
+}
+
 function getSessionUser(?PDO $db): ?array
 {
     if (!$db || empty($_SESSION['user_id'])) {
