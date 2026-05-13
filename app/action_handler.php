@@ -179,6 +179,18 @@ function publicUserData(array $user): array
     ];
 }
 
+function readValidatedString(string $field, string $pattern, string $message, bool $fromPost = true): string
+{
+    $raw = $fromPost ? ($_POST[$field] ?? '') : ($_GET[$field] ?? '');
+    $value = trim((string) $raw);
+
+    if ($value === '' || !preg_match($pattern, $value)) {
+        jsonResponse(['ok' => false, 'message' => $message], 422);
+    }
+
+    return $value;
+}
+
 function readValidatedInt(string $name, string $message, int $min = 0, ?int $max = null): int
 {
     $value = filter_input(INPUT_POST, $name, FILTER_VALIDATE_INT);
@@ -271,18 +283,12 @@ function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): vo
 
 function handleRegisterAction(PDO $db): never
 {
-    $username = trim((string) ($_POST['username'] ?? ''));
-    $nickname = trim((string) ($_POST['nickname'] ?? ''));
+    $username = readValidatedString('username', '/^[a-zA-Z0-9_]{3,20}$/', 'Username must have 3-20 characters and use only letters, numbers or _.');
+    $nickname = readValidatedString('nickname', '/^[a-zA-Z0-9_\- ]{3,20}$/', 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).');
     $password = (string) ($_POST['password'] ?? '');
 
-    if ($username === '' || $nickname === '' || $password === '') {
-        jsonResponse(['ok' => false, 'message' => 'Username, nickname and password are required.'], 422);
-    }
-    if (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username)) {
-        jsonResponse(['ok' => false, 'message' => 'Username must have 3-20 characters and use only letters, numbers or _.'], 422);
-    }
-    if (!preg_match('/^[a-zA-Z0-9_\- ]{3,20}$/', $nickname)) {
-        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).'], 422);
+    if ($password === '') {
+        jsonResponse(['ok' => false, 'message' => 'Password is required.'], 422);
     }
     validatePasswordStrength($password);
 
@@ -611,11 +617,7 @@ function requireAuthenticatedUser(PDO $db): array
 function handleUpdateProfileAction(PDO $db): never
 {
     $user = requireAuthenticatedUser($db);
-    $nickname = trim((string) ($_POST['nickname'] ?? ''));
-
-    if (!preg_match('/^[a-zA-Z0-9_\- ]{3,20}$/', $nickname)) {
-        jsonResponse(['ok' => false, 'message' => 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).'], 422);
-    }
+    $nickname = readValidatedString('nickname', '/^[a-zA-Z0-9_\- ]{3,20}$/', 'Nickname must have 3-20 characters (letters, numbers, spaces, _ or -).');
 
     $nicknameCheck = $db->prepare(
         'SELECT id
