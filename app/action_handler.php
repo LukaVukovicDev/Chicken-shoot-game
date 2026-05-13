@@ -223,43 +223,35 @@ function resolveMaxPointsPerHit(): int
     return 56 * 2;
 }
 
+function rejectScorePayload(string $reason, array $extra = []): never
+{
+    logSecurityEvent('request_rejected_invalid_score_payload', array_merge(
+        ['reason' => $reason, 'ip' => getClientIpAddress()],
+        $extra
+    ));
+    jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+}
+
 function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): void
 {
     $maxPointsPerHit = resolveMaxPointsPerHit();
 
     if ($clicks === 0 && ($score > 0 || $hits > 0)) {
-        logSecurityEvent('request_rejected_invalid_score_payload', [
-            'reason' => 'non_zero_score_without_clicks',
-            'score' => $score,
-            'clicks' => $clicks,
-            'hits' => $hits,
-            'ip' => getClientIpAddress(),
-        ]);
-        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+        rejectScorePayload('non_zero_score_without_clicks', ['score' => $score, 'clicks' => $clicks, 'hits' => $hits]);
     }
 
     if ($hits === 0 && $score > 0) {
-        logSecurityEvent('request_rejected_invalid_score_payload', [
-            'reason' => 'score_without_hits',
-            'score' => $score,
-            'clicks' => $clicks,
-            'hits' => $hits,
-            'ip' => getClientIpAddress(),
-        ]);
-        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
+        rejectScorePayload('score_without_hits', ['score' => $score, 'clicks' => $clicks, 'hits' => $hits]);
     }
 
     if ($score > ($hits * $maxPointsPerHit)) {
-        logSecurityEvent('request_rejected_invalid_score_payload', [
-            'reason' => 'score_above_max_points_per_hit',
+        rejectScorePayload('score_above_max_points_per_hit', [
             'score' => $score,
             'clicks' => $clicks,
             'hits' => $hits,
             'max_allowed' => $hits * $maxPointsPerHit,
             'ceiling_per_hit' => $maxPointsPerHit,
-            'ip' => getClientIpAddress(),
         ]);
-        jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
     }
 
     $routeId = filter_input(INPUT_POST, 'route_id', FILTER_VALIDATE_INT) ?: null;
@@ -269,14 +261,11 @@ function validateScoreIntegrity(int $score, int $clicks, int $hits, PDO $db): vo
         $route = $routeStmt->fetch() ?: null;
 
         if ($route !== null && $hits > (int) $route['spawn_limit']) {
-            logSecurityEvent('request_rejected_invalid_score_payload', [
-                'reason' => 'hits_exceed_route_spawn_limit',
+            rejectScorePayload('hits_exceed_route_spawn_limit', [
                 'hits' => $hits,
                 'spawn_limit' => (int) $route['spawn_limit'],
                 'route_id' => $routeId,
-                'ip' => getClientIpAddress(),
             ]);
-            jsonResponse(['ok' => false, 'message' => 'Score payload is not valid.'], 422);
         }
     }
 }
