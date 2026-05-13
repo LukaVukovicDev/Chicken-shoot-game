@@ -323,6 +323,8 @@ function enforcePublicEndpointRateLimit(string $action): void
         @mkdir($cacheDir, 0700, true);
     }
 
+    pruneStaleRateLimitFiles($cacheDir);
+
     $file = $cacheDir . DIRECTORY_SEPARATOR . $key . '.json';
     $now = time();
     $windowStart = $now - PUBLIC_RATE_LIMIT_WINDOW;
@@ -351,6 +353,18 @@ function enforcePublicEndpointRateLimit(string $action): void
     fwrite($fp, (string) json_encode(array_values($timestamps)));
     flock($fp, LOCK_UN);
     fclose($fp);
+}
+
+function pruneStaleRateLimitFiles(string $cacheDir): void
+{
+    $cutoff = time() - (PUBLIC_RATE_LIMIT_WINDOW * 10);
+    $files = glob($cacheDir . DIRECTORY_SEPARATOR . '*.json') ?: [];
+
+    foreach ($files as $file) {
+        if (is_file($file) && filemtime($file) < $cutoff) {
+            @unlink($file);
+        }
+    }
 }
 
 function fetchLoginAttempt(PDO $db, string $username, string $ip): ?array
