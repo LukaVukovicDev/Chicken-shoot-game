@@ -535,6 +535,32 @@ function fetchPersonalBest(?PDO $db, ?array $user): ?array
     ];
 }
 
+function fetchNicknameHistoryForUser(?PDO $db, ?array $user, int $limit = 20): array
+{
+    if (!$db || !$user) {
+        return [];
+    }
+
+    $limit = max(1, min(100, $limit));
+
+    $stmt = $db->prepare(
+        'SELECT old_nickname, new_nickname, changed_at
+         FROM nickname_history
+         WHERE user_id = :uid
+         ORDER BY id DESC
+         LIMIT :limit'
+    );
+    $stmt->bindValue(':uid', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return array_map(static fn (array $row): array => [
+        'old_nickname' => (string) $row['old_nickname'],
+        'new_nickname' => (string) $row['new_nickname'],
+        'changed_at'   => (string) $row['changed_at'],
+    ], $stmt->fetchAll() ?: []);
+}
+
 function getSessionUser(?PDO $db): ?array
 {
     if (!$db || empty($_SESSION['user_id'])) {
