@@ -65,6 +65,17 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
         ]);
     }
 
+    if ($action === 'accuracy_leaderboard') {
+        enforcePublicEndpointRateLimit($action);
+        $limit = filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT) ?: 10;
+        $limit = max(1, min(25, $limit));
+        jsonResponse([
+            'ok' => true,
+            'limit' => $limit,
+            'accuracy_leaderboard' => fetchTopAccuracyLeaders($database, $limit),
+        ]);
+    }
+
     if ($action === 'leaderboard_by_route') {
         enforcePublicEndpointRateLimit($action);
         $routeId = filter_input(INPUT_GET, 'route_id', FILTER_VALIDATE_INT);
@@ -124,7 +135,7 @@ function readRequestedAction(): string
 
 function isPublicAction(string $action): bool
 {
-    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route', 'stats', 'personal_best'], true);
+    return in_array($action, ['leaderboard', 'routes', 'leaderboard_by_route', 'stats', 'personal_best', 'accuracy_leaderboard'], true);
 }
 
 function dispatchProtectedAction(string $action, PDO $db): never
