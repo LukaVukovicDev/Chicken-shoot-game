@@ -149,6 +149,7 @@ function dispatchProtectedAction(string $action, PDO $db): never
         'save_score' => 'handleSaveScoreAction',
         'score_history' => 'handleScoreHistoryAction',
         'my_achievements' => 'handleMyAchievementsAction',
+        'nickname_history' => 'handleNicknameHistoryAction',
         'delete_account' => 'handleDeleteAccountAction',
     ];
 
@@ -472,6 +473,18 @@ function handleMyAchievementsAction(PDO $db): never
     jsonResponse([
         'ok' => true,
         'achievements' => fetchPlayerAchievements($db, $user),
+    ]);
+}
+
+function handleNicknameHistoryAction(PDO $db): never
+{
+    $user = requireAuthenticatedUser($db);
+    $limit = filter_input(INPUT_POST, 'limit', FILTER_VALIDATE_INT) ?: 20;
+
+    jsonResponse([
+        'ok' => true,
+        'nickname_history' => fetchNicknameHistoryForUser($db, $user, $limit),
+        'current_nickname' => (string) $user['nickname'],
     ]);
 }
 
