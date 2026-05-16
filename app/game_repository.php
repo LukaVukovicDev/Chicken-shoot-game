@@ -290,6 +290,34 @@ function fetchScoreHistory(?PDO $db, ?array $user, int $page = 1, int $perPage =
     ];
 }
 
+function fetchTopAccuracyLeaders(?PDO $db, int $limit = 10, int $minHits = 10): array
+{
+    if (!$db) {
+        return [];
+    }
+
+    $stmt = $db->prepare(
+        'SELECT
+            u.nickname,
+            SUM(s.hits) AS total_hits,
+            SUM(s.clicks) AS total_clicks,
+            ROUND((CAST(SUM(s.hits) AS REAL) / SUM(s.clicks)) * 100, 1) AS accuracy,
+            MAX(s.score) AS best_score
+         FROM scores s
+         INNER JOIN users u ON u.id = s.user_id
+         WHERE s.clicks > 0
+         GROUP BY s.user_id, u.nickname
+         HAVING SUM(s.hits) >= :min_hits AND SUM(s.clicks) > 0
+         ORDER BY accuracy DESC, total_hits DESC, MIN(s.created_at) ASC
+         LIMIT :limit'
+    );
+    $stmt->bindValue(':min_hits', $minHits, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll() ?: [];
+}
+
 function fetchLeaderboardByRoute(?PDO $db, int $routeId, int $limit = 10): array
 {
     if (!$db) {
