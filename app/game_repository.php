@@ -535,6 +535,46 @@ function fetchPersonalBest(?PDO $db, ?array $user): ?array
     ];
 }
 
+function fetchDailyActivityBreakdown(?PDO $db, ?array $user, int $days = 7): array
+{
+    if (!$db || !$user) {
+        return [];
+    }
+
+    $days = max(1, min(30, $days));
+
+    $stmt = $db->prepare(
+        "SELECT
+            DATE(created_at) AS day,
+            COUNT(id) AS rounds,
+            COALESCE(SUM(score), 0) AS total_score,
+            COALESCE(MAX(score), 0) AS best_score,
+            COALESCE(SUM(hits), 0) AS total_hits,
+            COALESCE(SUM(clicks), 0) AS total_clicks
+         FROM scores
+         WHERE user_id = :uid
+           AND DATE(created_at) >= DATE('now', :since)
+         GROUP BY DATE(created_at)
+         ORDER BY day ASC"
+    );
+    $stmt->execute([
+        ':uid' => (int) $user['id'],
+        ':since' => '-' . ($days - 1) . ' days',
+    ]);
+
+    return array_map(static function (array $row): array {
+        $clicks = (int) $row['total_clicks'];
+        $hits = (int) $row['total_hits'];
+        return [
+            'day' => (string) $row['day'],
+            'rounds' => (int) $row['rounds'],
+            'total_score' => (int) $row['total_score'],
+            'best_score' => (int) $row['best_score'],
+            'accuracy' => $clicks > 0 ? round(($hits / $clicks) * 100, 1) : 0.0,
+        ];
+    }, $stmt->fetchAll() ?: []);
+}
+
 function fetchNicknameHistoryForUser(?PDO $db, ?array $user, int $limit = 20): array
 {
     if (!$db || !$user) {

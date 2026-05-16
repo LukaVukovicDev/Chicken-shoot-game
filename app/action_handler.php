@@ -52,6 +52,7 @@ function handleActionRequest(?PDO $db, ?string $dbError): void
             'above_average_streak' => $user ? fetchRecentScoreStreak($database, $user) : null,
             'personal_best' => fetchPersonalBest($database, $user),
             'worst_round' => fetchWorstRound($database, $user),
+            'daily_activity' => $user ? fetchDailyActivityBreakdown($database, $user) : [],
         ]);
     }
 
